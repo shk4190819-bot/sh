@@ -306,9 +306,28 @@ REVIEW = """{% extends 'base.html' %}
   {{ route.owner.username }} · <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span> · שפת מקור: {{ route.source_lang }}
 </div>
 <div class="alert alert-warning">הקוד ירוץ בתוך תהליך השרת. אשר רק אם קראת אותו עד הסוף והוא לא נוגע בסודות, בקבצים או במסד הנתונים.</div>
+<h6 class="mt-3">ספריות חיצוניות</h6>
+<div class="mb-3">
+  {% if libs %}
+    {% for lib in libs %}
+      {% if lib.status == 'installed' %}
+        <span class="badge text-bg-success me-1 ltr">{{ lib.name }} · מותקנת</span>
+      {% elif lib.status == 'will_install' %}
+        <span class="badge text-bg-warning me-1 ltr">{{ lib.name }} · תותקן באישור ({{ lib.package }})</span>
+      {% else %}
+        <span class="badge text-bg-danger me-1 ltr">{{ lib.name }} · לא מותרת</span>
+      {% endif %}
+    {% endfor %}
+    {% if libs | selectattr('status', 'equalto', 'blocked') | list %}
+      <div class="text-danger small mt-2">יש ספרייה שלא ברשימה המותרת, ולכן האישור חסום. אפשר להוסיף אותה ל-ALLOWED ב-deps.py או במשתנה USER_LIBS_EXTRA ולרענן.</div>
+    {% endif %}
+  {% else %}
+    <span class="text-muted small">הקוד משתמש רק ב-Flask ובספריית הסטנדרט.</span>
+  {% endif %}
+</div>
 <pre class="code ltr p-3 rounded-3 text-light" style="background:#1e1e2e;white-space:pre-wrap;max-height:60vh;overflow:auto">{{ route.pending_code }}</pre>
 <div class="d-flex gap-2">
-  <form method="post" action="{{ url_for('approve_route', route_id=route.id) }}">__CSRF__<button class="btn btn-success px-4">אשר ופרוס</button></form>
+  <form method="post" action="{{ url_for('approve_route', route_id=route.id) }}">__CSRF__<button class="btn btn-success px-4"{% if libs | selectattr('status', 'equalto', 'blocked') | list %} disabled{% endif %}>אשר ופרוס</button></form>
   <form method="post" action="{{ url_for('reject_route', route_id=route.id) }}">__CSRF__<button class="btn btn-outline-danger px-4">דחה</button></form>
 </div>
 {% endblock %}"""
