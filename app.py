@@ -8,8 +8,8 @@ from types import ModuleType
 
 from authlib.integrations.flask_client import OAuth
 from cryptography.fernet import Fernet, InvalidToken
-from flask import Blueprint, Flask, Response, abort, redirect, render_template, request, session, url_for
-from flask_wtf.csrf import CSRFProtect
+from flask import Blueprint, Flask, Response, abort, flash, redirect, render_template, request, session, url_for
+from flask_wtf.csrf import CSRFError, CSRFProtect
 from jinja2 import DictLoader
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -91,7 +91,23 @@ class UserError(Exception):
 # ==========================================
 @app.errorhandler(UserError)
 def handle_user_error(e):
+    # שגיאות שבטוח להציג: חוזרים לאותו מסך עם הודעה ברורה, בלי להעיף את המשתמש לדף נפרד
+    if request.endpoint == "login_page":
+        flash(str(e), "danger")
+        return render_template(
+            "login.html",
+            tab=request.form.get("action", "login"),
+            prefill=(request.form.get("username") or "")[:50],
+        ), 400
+    if current_user():
+        flash(str(e), "danger")
+        return redirect(url_for("index"))
     return render_template("error.html", message=str(e)), 400
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template("error.html", message="פג תוקף הטופס. רענן את הדף ונסה שוב."), 400
 
 
 @app.errorhandler(Exception)
@@ -160,6 +176,8 @@ def unique_username(email):
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
     if request.method == "GET":
+        if current_user():
+            return redirect(url_for("index"))
         return render_template("login.html")
 
     username = (request.form.get("username") or "").strip().lower()
@@ -185,6 +203,7 @@ def login_page():
         abort(400)
 
     start_session(user)
+    flash("נרשמת בהצלחה, ברוך הבא!" if action == "register" else "התחברת בהצלחה.", "success")
     return redirect(url_for("index"))
 
 
@@ -259,6 +278,7 @@ def update_key():
         else:
             db.session.add(ApiKey(user_id=user.id, provider=provider, encrypted_key=encrypted))
     db.session.commit()
+    flash("המפתח נמחק." if request.form.get("action") == "delete" else "המפתח נשמר בהצלחה.", "success")
     return redirect(url_for("index"))
 
 
@@ -324,6 +344,9 @@ def deploy_server():
 
     if user.is_admin:  # המנהל לא צריך לאשר לעצמו
         activate(route)
+        flash(f"השרת פעיל בכתובת {route.full_path}", "success")
+    else:
+        flash("הקוד נשלח לבדיקה ויופעל אחרי אישור מנהל.", "success")
     return redirect(url_for("index"))
 
 
@@ -440,6 +463,7 @@ def approve_route(route_id):
     if not route or not route.pending_code:
         abort(404)
     activate(route)
+    flash(f"השרת אושר ופעיל: {route.full_path}", "success")
     return redirect(url_for("index"))
 
 
@@ -453,6 +477,7 @@ def reject_route(route_id):
     if not route.live_code:
         route.status = "rejected"
     db.session.commit()
+    flash("הבקשה נדחתה.", "info")
     return redirect(url_for("index"))
 
 
