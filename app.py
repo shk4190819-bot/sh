@@ -16,6 +16,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import ai_providers
+import deps
 from models import ApiKey, Log, Route, User, db
 from ui import TEMPLATES
 
@@ -62,6 +63,7 @@ if os.environ.get("TRUST_PROXY") == "1":  # מאחורי Render / nginx: IP אמ
 logging.basicConfig(level=logging.INFO)
 csrf = CSRFProtect(app)
 db.init_app(app)
+deps.add_to_path()
 with app.app_context():
     db.create_all()
 
@@ -355,6 +357,7 @@ _subapps = {}  # route_id -> (live_version, flask_app). cache לכל worker, מ�
 
 
 def build_subapp(code, label, ident):
+    deps.ensure_dependencies(code)
     module = ModuleType(f"user_route_{ident}")
     exec(compile(code, f"<user:{label}>", "exec"), module.__dict__)
     bp = getattr(module, "bp", None)
@@ -453,7 +456,7 @@ def review_route(route_id):
     route = db.session.get(Route, route_id)
     if not route or not route.pending_code:
         abort(404)
-    return render_template("review.html", route=route)
+    return render_template("review.html", route=route, libs=deps.analyze(route.pending_code))
 
 
 @app.post("/admin/review/<int:route_id>/approve")
