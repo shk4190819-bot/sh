@@ -26,6 +26,9 @@ body{font-family:'Heebo',system-ui,sans-serif;background:#f4f5fb;color:#1f2430}
 .ltr{direction:ltr;text-align:left}
 .code{font-family:ui-monospace,Consolas,monospace;font-size:.9rem}
 .step-num{width:28px;height:28px;border-radius:50%;background:#eef0ff;color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.diff{background:#1e1e2e;color:#cdd6f4;white-space:pre-wrap;overflow:auto;max-height:50vh}
+.diff span{display:block}
+.d-add{background:rgba(46,160,67,.28)}.d-del{background:rgba(248,81,73,.28)}.d-hunk{color:#89b4fa}
 .url-chip{background:#f1f2fa;border-radius:8px;padding:2px 8px;font-size:.85rem;word-break:break-all}
 </style>
 </head>
@@ -49,6 +52,9 @@ body{font-family:'Heebo',system-ui,sans-serif;background:#f4f5fb;color:#1f2430}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){
+  if(!confirm(f.dataset.confirm)){e.preventDefault();e.stopImmediatePropagation();}
+});});
 document.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',function(){
   var b=f.querySelector('button.js-load'); if(b){b.disabled=true;b.textContent='רגע...';}
 });});
@@ -195,7 +201,8 @@ DASHBOARD = """{% extends 'base.html' %}
         <div id="modeHint" class="alert alert-light border small"></div>
 
         <label class="form-label">הקוד</label>
-        <textarea name="code" class="form-control ltr code mb-3" rows="10" required placeholder="הדבק כאן את הקוד..."></textarea>
+        <textarea name="code" id="code" class="form-control ltr code" rows="12" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
+        <div id="codeCount" class="form-text mb-3 text-end"></div>
         <button type="submit" class="btn btn-primary px-4 js-load">שלח לפריסה</button>
       </form>
     </div>
@@ -254,7 +261,9 @@ DASHBOARD = """{% extends 'base.html' %}
           <button type="button" class="btn btn-sm btn-outline-secondary js-copy" data-url="{{ request.host_url.rstrip('/') }}{{ route.full_path }}">העתק</button>
           <a href="{{ route.full_path }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">פתח</a>
           {% endif %}
+          {% if route.live_code or route.pending_code %}<a href="{{ url_for('edit_route', route_id=route.id) }}" class="btn btn-sm btn-primary">ערוך קוד</a>{% endif %}
           <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">יומנים</a>
+          <form method="post" action="{{ url_for('delete_route', route_id=route.id) }}" class="d-inline" data-confirm="למחוק את השרת {{ route.full_path }} לצמיתות? אי אפשר לשחזר.">__CSRF__<button class="btn btn-sm btn-outline-danger">מחק</button></form>
         </td>
       </tr>
       {% endfor %}
@@ -286,7 +295,15 @@ DASHBOARD = """{% extends 'base.html' %}
       ? 'הקוד יתורגם ל-Flask על ידי ספק ה-AI שבחרת (נדרש מפתח API שמור).'
       : 'קוד Python נשלח ישירות לבדיקה, בלי AI. הוא חייב להגדיר Blueprint בשם bp עם נתיבים יחסיים, למשל /.';
   }
-  lang.addEventListener('input',upd); force.addEventListener('change',upd); upd();
+  var code=document.getElementById('code'), cnt=document.getElementById('codeCount');
+  function count(){
+    var isPy=PY.indexOf(lang.value.trim().toLowerCase())>-1, useAi=!isPy||force.checked;
+    var max=parseInt(useAi?code.dataset.maxAi:code.dataset.maxDirect,10), n=code.value.length;
+    cnt.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים'+(useAi?' (תרגום ב-AI)':' (Python ישיר)');
+    cnt.classList.toggle('text-danger',n>max);
+  }
+  function both(){upd();count();}
+  lang.addEventListener('input',both); force.addEventListener('change',both); code.addEventListener('input',count); both();
   var rn=document.querySelector('[name=route_name]'), pv=document.getElementById('rnPreview');
   rn.addEventListener('input',function(){pv.textContent=rn.value||'...';});
   document.querySelectorAll('[data-lower]').forEach(function(i){i.addEventListener('input',function(){i.value=i.value.toLowerCase();});});
@@ -325,6 +342,13 @@ REVIEW = """{% extends 'base.html' %}
     <span class="text-muted small">הקוד משתמש רק ב-Flask ובספריית הסטנדרט.</span>
   {% endif %}
 </div>
+{% if diff_lines %}
+<h6>שינויים לעומת הגרסה הפעילה</h6>
+<pre class="code ltr p-3 rounded-3 diff">{% for l in diff_lines %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
+{% elif route.live_code %}
+<div class="text-muted small mb-2">אין הבדלים לעומת הגרסה הפעילה.</div>
+{% endif %}
+<h6>הקוד המלא</h6>
 <pre class="code ltr p-3 rounded-3 text-light" style="background:#1e1e2e;white-space:pre-wrap;max-height:60vh;overflow:auto">{{ route.pending_code }}</pre>
 <div class="d-flex gap-2">
   <form method="post" action="{{ url_for('approve_route', route_id=route.id) }}">__CSRF__<button class="btn btn-success px-4"{% if libs | selectattr('status', 'equalto', 'blocked') | list %} disabled{% endif %}>אשר ופרוס</button></form>
@@ -353,8 +377,90 @@ LOGS = """{% extends 'base.html' %}
 </div>
 {% endblock %}"""
 
+EDIT = """{% extends 'base.html' %}
+{% block title %}עריכת שרת{% endblock %}
+{% block content %}
+<a href="{{ url_for('index') }}" class="text-decoration-none">&rarr; חזרה ללוח הבקרה</a>
+<h3 class="mt-2">עריכת שרת</h3>
+<div class="mb-3">
+  <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span>
+  {% if route.status == 'active' %}<span class="badge bg-success">פעיל</span>{% else %}<span class="badge bg-warning text-dark">ממתין לאישור</span>{% endif %}
+</div>
+{% if route.pending_code and route.live_code %}
+<div class="alert alert-warning">יש כבר גרסה חדשה שממתינה לאישור. העריכה ממשיכה ממנה, והגרסה הפעילה ממשיכה לרוץ בינתיים.</div>
+{% endif %}
+<div class="alert alert-light border small">
+  {% if current_user.is_admin %}כמנהל, שמירה מפעילה את השינוי מיד.{% else %}אחרי השמירה השינוי נשלח לאישור מנהל. עד אז הגרסה הפעילה ממשיכה לרוץ בלי שינוי.{% endif %}
+  הקוד חייב להגדיר Blueprint בשם <code>bp</code> עם נתיבים יחסיים.
+</div>
+
+<div class="card p-3 mb-3">
+  <h6 class="mb-2">עריכה בעזרת AI</h6>
+  <form method="post" action="{{ url_for('edit_route_ai', route_id=route.id) }}" id="aiForm">
+    __CSRF__
+    <input type="hidden" name="code" id="aiCode">
+    <div class="row g-2">
+      <div class="col-md-8">
+        <textarea name="instruction" class="form-control" rows="3" maxlength="2000" required placeholder="תאר מה לשנות, למשל: הוסף בדיקה שהפרמטר id קיים, והחזר שגיאה 400 אם לא">{{ instruction|default('') }}</textarea>
+      </div>
+      <div class="col-md-4 d-flex flex-column gap-2">
+        <select name="provider" class="form-select">
+          {% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-outline-primary js-load">הצע שינוי</button>
+      </div>
+    </div>
+    <div class="form-text mt-2">ה-AI מקבל את הקוד שנמצא כרגע בעורך, ומחזיר גרסה מוצעת. שום דבר לא נשמר עד שתלחץ "שמור שינויים". הפעולה יכולה לקחת כדקה.</div>
+  </form>
+</div>
+
+{% if ai_diff is defined and ai_diff is not none %}
+<div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <span>{% if ai_diff %}ההצעה של ה-AI הוכנסה לעורך שלמטה ועדיין לא נשמרה. כך הקוד השתנה:{% else %}ה-AI לא ביצע שינוי בקוד.{% endif %}</span>
+  {% if ai_diff %}<button type="button" class="btn btn-sm btn-outline-secondary" id="undoAi">החזר למה שהיה לפני ההצעה</button>{% endif %}
+</div>
+{% if ai_diff %}
+<pre class="code ltr p-3 rounded-3 diff mb-3">{% for l in ai_diff %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
+<textarea id="origCode" hidden>
+{{ original_code }}</textarea>
+{% endif %}
+{% endif %}
+
+<form method="post" action="{{ url_for('edit_route', route_id=route.id) }}" id="editForm">
+  __CSRF__
+  <textarea name="code" id="code" class="form-control ltr code mb-1" rows="24" spellcheck="false" required data-max="{{ max_code_chars }}" data-dirty="{{ '1' if ai_diff else '' }}">
+{{ code }}</textarea>
+  <div id="codeCount" class="form-text text-end mb-3"></div>
+  <div class="d-flex gap-2 align-items-center">
+    <button type="submit" class="btn btn-primary px-4 js-load">שמור שינויים</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
+    <span class="text-muted small">Ctrl+S לשמירה · Tab להזחה</span>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var t=document.getElementById('code'), c=document.getElementById('codeCount'), f=document.getElementById('editForm'), ai=document.getElementById('aiForm');
+  var max=parseInt(t.dataset.max,10), dirty=t.dataset.dirty==='1';
+  function count(){var n=t.value.length;c.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים';c.classList.toggle('text-danger',n>max);}
+  t.addEventListener('input',function(){dirty=true;count();}); count();
+  t.addEventListener('keydown',function(e){
+    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();var s=t.selectionStart,en=t.selectionEnd;t.value=t.value.substring(0,s)+'    '+t.value.substring(en);t.selectionStart=t.selectionEnd=s+4;dirty=true;count();}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();f.requestSubmit();}
+  });
+  f.addEventListener('submit',function(){dirty=false;});
+  ai.addEventListener('submit',function(){document.getElementById('aiCode').value=t.value;dirty=false;});
+  var u=document.getElementById('undoAi');
+  if(u){u.addEventListener('click',function(){t.value=document.getElementById('origCode').value;count();});}
+  window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue='';}});
+})();
+</script>
+{% endblock %}"""
+
 TEMPLATES = {
     "base.html": BASE,
+    "edit.html": EDIT,
     "login.html": LOGIN,
     "error.html": ERROR,
     "dashboard.html": DASHBOARD,
