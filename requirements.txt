@@ -9,3 +9,4 @@ gunicorn
 anthropic
 openai
 google-genai
+beautifulsoup4
