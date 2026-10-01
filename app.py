@@ -1,4 +1,5 @@
 import ast
+import difflib
 import logging
 import os
 import re
@@ -81,7 +82,9 @@ ROUTE_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,39}$")
 LANG_RE = re.compile(r"^[\w+#.\- ]{1,30}$")
 RESERVED = {"admin", "auth", "login", "logout", "static", "settings", "deploy", "api", "review"}
 PY_LANGS = {"python", "py", "python3", "flask"}
-MAX_CODE_CHARS = 30_000
+# מגבלות אורך קוד (ניתנות לשינוי במשתני סביבה ב-Render)
+MAX_CODE_CHARS = int(os.environ.get("MAX_CODE_CHARS", "200000"))  # Python ישיר: נשמר כמו שהוא, בלי AI
+MAX_AI_CODE_CHARS = int(os.environ.get("MAX_AI_CODE_CHARS", "60000"))  # תרגום ב-AI: התשובה חייבת להיכנס בפלט אחד של המודל
 
 
 class UserError(Exception):
@@ -317,11 +320,17 @@ def deploy_server():
     if not LANG_RE.match(source_lang):
         raise UserError("שפת מקור לא תקינה.")
     code = request.form.get("code") or ""
-    if not code.strip() or len(code) > MAX_CODE_CHARS:
-        raise UserError(f"הקוד ריק או ארוך מדי (מקסימום {MAX_CODE_CHARS} תווים).")
+    if not code.strip():
+        raise UserError("לא הוזן קוד.")
 
     force_ai = request.form.get("force_ai") == "1"
-    if source_lang.lower() in PY_LANGS and not force_ai:
+    use_ai = not (source_lang.lower() in PY_LANGS and not force_ai)
+    limit = MAX_AI_CODE_CHARS if use_ai else MAX_CODE_CHARS
+    if len(code) > limit:
+        hint = " אפשר לפצל לכמה שרתים קטנים, או להדביק קוד Python ישירות (בלי AI)." if use_ai else ""
+        raise UserError(f"הקוד ארוך מדי: {len(code):,} תווים, והמקסימום כאן הוא {limit:,}.{hint}")
+
+    if not use_ai:
         final_code = code  # Python: אין צורך ב-AI
     else:
         provider = request.form.get("provider")
@@ -349,6 +358,121 @@ def deploy_server():
         flash(f"השרת פעיל בכתובת {route.full_path}", "success")
     else:
         flash("הקוד נשלח לבדיקה ויופעל אחרי אישור מנהל.", "success")
+    return redirect(url_for("index"))
+
+
+def make_diff(old, new, from_label="לפני", to_label="אחרי"):
+    return [
+        line.rstrip("\n")
+        for line in difflib.unified_diff(old.splitlines(True), new.splitlines(True), from_label, to_label, n=3)
+    ]
+
+
+def get_editable_route(route_id):
+    """שרת שהמשתמש רשאי לערוך (הבעלים או מנהל) ויש בו קוד."""
+    user = current_user()
+    route = db.session.get(Route, route_id)
+    if not route or (route.user_id != user.id and not user.is_admin):
+        abort(404)
+    if not (route.pending_code or route.live_code):
+        abort(404)
+    return route
+
+
+def render_edit(route, code, status=200, **extra):
+    user = current_user()
+    html = render_template(
+        "edit.html",
+        route=route,
+        code=code,
+        max_code_chars=MAX_CODE_CHARS,
+        providers=ai_providers.PROVIDERS,
+        saved_providers={k.provider for k in user.api_keys},
+        **extra,
+    )
+    return html, status
+
+
+@app.route("/edit/<int:route_id>", methods=["GET", "POST"])
+@login_required
+def edit_route(route_id):
+    """עריכת הקוד של שרת קיים. משתמש רגיל: השינוי ממתין לאישור והגרסה הפעילה ממשיכה לרוץ. מנהל: מיידי."""
+    user = current_user()
+    route = get_editable_route(route_id)
+    current = route.pending_code or route.live_code
+
+    if request.method == "GET":
+        return render_edit(route, current)
+
+    code = (request.form.get("code") or "").replace("\r\n", "\n")
+    try:
+        if not code.strip():
+            raise UserError("הקוד ריק.")
+        if len(code) > MAX_CODE_CHARS:
+            raise UserError(f"הקוד ארוך מדי: {len(code):,} תווים, והמקסימום הוא {MAX_CODE_CHARS:,}.")
+        validate_python(code)
+        if code.strip() == current.strip():
+            flash("לא בוצעו שינויים.", "info")
+            return redirect(url_for("edit_route", route_id=route.id))
+
+        route.pending_code = code
+        db.session.commit()
+        if user.is_admin:
+            activate(route)
+            flash("השינויים נשמרו והשרת עודכן.", "success")
+        else:
+            flash("השינויים נשלחו לבדיקה. הגרסה הפעילה ממשיכה לרוץ עד שמנהל יאשר.", "success")
+    except UserError as e:
+        # נשארים בעורך עם הקוד שהוקלד, כדי שלא יאבד
+        db.session.rollback()
+        flash(str(e), "danger")
+        return render_edit(route, code, 400)
+    return redirect(url_for("index"))
+
+
+@app.post("/edit/<int:route_id>/ai")
+@login_required
+def edit_route_ai(route_id):
+    """מבקש מה-AI לשנות את הקוד שבעורך. התוצאה רק נטענת לעורך להצגה, ושום דבר לא נשמר עד לחיצה על שמירה."""
+    user = current_user()
+    route = get_editable_route(route_id)
+    code = (request.form.get("code") or route.pending_code or route.live_code or "").replace("\r\n", "\n")
+    instruction = (request.form.get("instruction") or "").strip()
+    try:
+        if not instruction:
+            raise UserError("כתוב מה לשנות בקוד.")
+        if len(instruction) > 2000:
+            raise UserError("ההוראה ארוכה מדי (עד 2,000 תווים).")
+        if len(code) > MAX_AI_CODE_CHARS:
+            raise UserError(f"הקוד ארוך מדי לעריכה ב-AI ({len(code):,} תווים, המקסימום {MAX_AI_CODE_CHARS:,}). אפשר לערוך אותו ידנית.")
+        provider = request.form.get("provider")
+        api_key = get_api_key(user, provider)
+        try:
+            raw = ai_providers.generate(provider, api_key, ai_providers.build_edit_prompt(instruction, code))
+        except ai_providers.ProviderError as e:
+            raise UserError(f"שגיאה מספק ה-AI: {e}")
+        new_code = strip_fences(raw)
+        validate_python(new_code)
+    except UserError as e:
+        flash(str(e), "danger")
+        return render_edit(route, code, 400, instruction=instruction)
+
+    diff_lines = make_diff(code, new_code, "לפני ההצעה", "הצעת ה-AI")
+    return render_edit(route, new_code, instruction=instruction, ai_diff=diff_lines, original_code=code)
+
+
+@app.post("/delete/<int:route_id>")
+@login_required
+def delete_route(route_id):
+    user = current_user()
+    route = db.session.get(Route, route_id)
+    if not route or (route.user_id != user.id and not user.is_admin):
+        abort(404)
+    path = route.full_path
+    _subapps.pop(route.id, None)  # ב-workers אחרים מספיק שהשורה נמחקה מה-DB: הבקשות הבאות יקבלו 404
+    db.session.delete(route)  # היומנים נמחקים יחד איתו (cascade)
+    db.session.commit()
+    flash(f"השרת {path} נמחק.", "success")
     return redirect(url_for("index"))
 
 
@@ -440,6 +564,8 @@ def index():
         "providers": ai_providers.PROVIDERS,
         "saved_providers": {k.provider for k in user.api_keys},
         "pending": [],
+        "max_code_chars": MAX_CODE_CHARS,
+        "max_ai_chars": MAX_AI_CODE_CHARS,
         "users_count": 0,
         "active_count": 0,
     }
@@ -456,7 +582,19 @@ def review_route(route_id):
     route = db.session.get(Route, route_id)
     if not route or not route.pending_code:
         abort(404)
-    return render_template("review.html", route=route, libs=deps.analyze(route.pending_code))
+    diff_lines = None
+    if route.live_code:  # עדכון לשרת קיים: מציגים מה בדיוק השתנה
+        diff_lines = [
+            line.rstrip("\n")
+            for line in difflib.unified_diff(
+                route.live_code.splitlines(True),
+                route.pending_code.splitlines(True),
+                "גרסה פעילה",
+                "גרסה חדשה",
+                n=3,
+            )
+        ]
+    return render_template("review.html", route=route, libs=deps.analyze(route.pending_code), diff_lines=diff_lines)
 
 
 @app.post("/admin/review/<int:route_id>/approve")
