@@ -41,6 +41,9 @@ ADMIN_USERNAME = (os.environ.get("ADMIN_USERNAME") or "").strip().lower()
 database_url = os.getenv("DATABASE_URL", "sqlite:///local.db")
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
+# SQLAlchemy 2.1+ משתמש כברירת מחדל ב-psycopg (גרסה 3). אנחנו מתקינים psycopg2, ולכן מציינים אותו במפורש.
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 app.config.update(
     SQLALCHEMY_DATABASE_URI=database_url,
