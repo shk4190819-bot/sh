@@ -118,10 +118,10 @@ Rules:
 
 def build_edit_prompt(instruction, code):
     return f"""You are an expert Python Flask backend developer.
-Modify the Flask Blueprint code inside <current_code> according to the request inside <change_request>.
+Modify the Flask code inside <current_code> according to the request inside <change_request>.
 
 Rules:
-1. Keep exactly one Blueprint assigned to a variable named `bp`, and keep route paths relative to the blueprint root (for example '/' or '/callback').
+1. Keep the existing structure: if the code defines a Flask app named `app`, keep it as is; if it defines a Blueprint named `bp`, keep it. Do not convert one into the other. Keep route paths unchanged.
 2. Preserve the existing behavior unless the request asks to change it. Make the smallest change that satisfies the request.
 3. Use only Flask, the Python standard library, `requests`, and libraries that the code already imports.
 4. If the code needs configuration values or secrets (API keys, tokens, passwords), read them from the pre-defined global mapping `env`, for example env.get('API_KEY'). Never hard-code secrets and do not use os.environ or os.getenv.
