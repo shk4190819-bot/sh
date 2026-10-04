@@ -18,6 +18,8 @@ class User(db.Model):
     google_sub = db.Column(db.String(64), unique=True, nullable=True)  # מזהה יציב של חשבון Google
     password_hash = db.Column(db.String(255), nullable=True)  # None = משתמש Google בלבד, אין כניסה בסיסמה
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    # משתמש חדש ממתין לאישור מנהל. אחרי האישור, השרתים שלו עולים בלי אישור נוסף.
+    is_approved = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
     routes = db.relationship("Route", backref="owner", lazy=True, cascade="all, delete-orphan")
