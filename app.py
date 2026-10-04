@@ -358,12 +358,8 @@ def validate_python(code):
         tree = ast.parse(code)
     except SyntaxError as e:
         raise UserError(f"שגיאת תחביר בקוד (שורה {e.lineno}): {e.msg}")
-    defines_bp = any(
-        isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "bp" for t in n.targets)
-        for n in tree.body
-    )
-    if not defines_bp:
-        raise UserError("הקוד חייב להגדיר Blueprint בשם bp, למשל: bp = Blueprint('x', __name__)")
+    if not bundles._defines_bp(tree):
+        raise UserError("הקוד חייב להגדיר אפליקציית Flask בשם app, למשל: app = Flask(__name__) (או Blueprint בשם bp).")
 
 
 @app.post("/deploy")
@@ -717,10 +713,15 @@ def build_subapp(code, label, ident, env=None, tag=0):
     module.__dict__["env"] = MappingProxyType(dict(env or {}))  # משתני הסביבה של השרת הזה בלבד
     exec(compile(code, f"<user:{label}>", "exec"), module.__dict__)
     bp = getattr(module, "bp", None)
-    if not isinstance(bp, Blueprint):
-        raise RuntimeError("bp is not a Flask Blueprint")
-    sub = Flask(f"user_route_{ident}")
-    sub.register_blueprint(bp)
+    if isinstance(bp, Blueprint):
+        sub = Flask(f"user_route_{ident}")
+        sub.register_blueprint(bp)
+        return sub, None
+    sub = getattr(module, "app", None)
+    if sub is None:
+        sub = getattr(module, "application", None)
+    if sub is None or not callable(sub):
+        raise RuntimeError("לא נמצא app (אפליקציית Flask) או bp (Blueprint) בקוד")
     return sub, None
 def activate(route):
     """מעביר קוד ממתין ל-live. נקרא רק אחרי אישור מנהל (או כשהמנהל עצמו פורס)."""
