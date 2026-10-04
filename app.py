@@ -1,11 +1,12 @@
 import ast
 import difflib
+import json
 import logging
 import os
 import re
 import secrets
 from functools import wraps
-from types import ModuleType
+from types import MappingProxyType, ModuleType
 
 from authlib.integrations.flask_client import OAuth
 from cryptography.fernet import Fernet, InvalidToken
@@ -17,8 +18,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import ai_providers
+import bundles
 import deps
-from models import ApiKey, Log, Route, User, db
+import github_client
+from models import ApiKey, EnvVar, Log, Route, RouteSource, User, db
 from ui import TEMPLATES
 
 # ==========================================
@@ -85,6 +88,11 @@ PY_LANGS = {"python", "py", "python3", "flask"}
 # מגבלות אורך קוד (ניתנות לשינוי במשתני סביבה ב-Render)
 MAX_CODE_CHARS = int(os.environ.get("MAX_CODE_CHARS", "200000"))  # Python ישיר: נשמר כמו שהוא, בלי AI
 MAX_AI_CODE_CHARS = int(os.environ.get("MAX_AI_CODE_CHARS", "60000"))  # תרגום ב-AI: התשובה חייבת להיכנס בפלט אחד של המודל
+ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+MAX_ENV_VARS = 50
+MAX_ENV_VALUE = 4096
+# סיומת קובץ ב-GitHub -> שפת מקור (py נשלח ישירות, השאר מתורגם ב-AI)
+EXT_LANG = {".py": "Python", ".php": "PHP", ".js": "JavaScript", ".mjs": "JavaScript", ".java": "Java", ".go": "Go", ".rb": "Ruby", ".cs": "C#"}
 
 
 class UserError(Exception):
@@ -261,6 +269,56 @@ def get_api_key(user, provider):
         raise UserError("לא ניתן לפענח את המפתח השמור. הזן אותו מחדש.")
 
 
+def get_github_token(user):
+    """הטוקן המוצפן של GitHub של המשתמש (נשמר בטבלת ApiKey עם provider=github), או None."""
+    row = ApiKey.query.filter_by(user_id=user.id, provider="github").first()
+    if not row:
+        return None
+    try:
+        return fernet.decrypt(row.encrypted_key.encode()).decode()
+    except InvalidToken:
+        return None
+
+
+def route_env(route):
+    """משתני הסביבה של שרת אחד, מפוענחים: {name: value}."""
+    out = {}
+    for v in route.env_vars:
+        try:
+            out[v.name] = fernet.decrypt(v.encrypted_value.encode()).decode()
+        except InvalidToken:
+            continue
+    return out
+
+
+@app.post("/settings/github")
+@login_required
+def update_github():
+    user = current_user()
+    row = ApiKey.query.filter_by(user_id=user.id, provider="github").first()
+    if request.form.get("action") == "delete":
+        if row:
+            db.session.delete(row)
+            db.session.commit()
+        flash("החיבור ל-GitHub נותק.", "success")
+        return redirect(url_for("index"))
+    token = (request.form.get("token") or "").strip()
+    if not token:
+        raise UserError("לא הוזן טוקן.")
+    try:
+        login = github_client.token_login(token)
+    except github_client.GithubError as e:
+        raise UserError(str(e))
+    encrypted = fernet.encrypt(token.encode()).decode()
+    if row:
+        row.encrypted_key = encrypted
+    else:
+        db.session.add(ApiKey(user_id=user.id, provider="github", encrypted_key=encrypted))
+    db.session.commit()
+    flash(f"GitHub חובר בהצלחה (החשבון {login}).", "success")
+    return redirect(url_for("index"))
+
+
 @app.post("/settings/key")
 @login_required
 def update_key():
@@ -316,32 +374,63 @@ def deploy_server():
     route_name = (request.form.get("route_name") or "").strip().lower()
     if not ROUTE_RE.match(route_name):
         raise UserError("שם נתיב: עד 40 תווים, אנגלית קטנה/ספרות/_ בלבד.")
-    source_lang = (request.form.get("source_lang") or "").strip()
-    if not LANG_RE.match(source_lang):
-        raise UserError("שפת מקור לא תקינה.")
-    code = request.form.get("code") or ""
-    if not code.strip():
-        raise UserError("לא הוזן קוד.")
 
-    force_ai = request.form.get("force_ai") == "1"
-    use_ai = not (source_lang.lower() in PY_LANGS and not force_ai)
-    limit = MAX_AI_CODE_CHARS if use_ai else MAX_CODE_CHARS
-    if len(code) > limit:
-        hint = " אפשר לפצל לכמה שרתים קטנים, או להדביק קוד Python ישירות (בלי AI)." if use_ai else ""
-        raise UserError(f"הקוד ארוך מדי: {len(code):,} תווים, והמקסימום כאן הוא {limit:,}.{hint}")
-
-    if not use_ai:
-        final_code = code  # Python: אין צורך ב-AI
-    else:
-        provider = request.form.get("provider")
-        api_key = get_api_key(user, provider)
-        prompt = ai_providers.build_translation_prompt(source_lang, code)
+    mode = request.form.get("source_mode")
+    gh_meta = None
+    if mode == "repo":  # ריפו או תיקייה שלמה מ-GitHub (כמה קבצים)
         try:
-            final_code = strip_fences(ai_providers.generate(provider, api_key, prompt))
-        except ai_providers.ProviderError as e:
-            raise UserError(f"שגיאה מספק ה-AI: {e}")
+            repo, subdir, ref = github_client.parse_repo_input(
+                request.form.get("github_url"), request.form.get("github_subdir"), request.form.get("github_ref")
+            )
+            info = github_client.fetch_repo(repo, ref, subdir, get_github_token(user))
+            entry = bundles.pick_entry(info["files"], request.form.get("github_entry"))
+            bundles.validate(info["files"], entry)
+        except (github_client.GithubError, bundles.BundleError) as e:
+            raise UserError(str(e))
+        source_lang = "Python"
+        final_code = bundles.pack(info["files"], entry)
+        gh_meta = {"repo": repo, "path": subdir, "ref": ref, "sha": info["sha"]}
+    else:
+        force_ai = False
+        if mode == "github":  # קובץ בודד מ-GitHub
+            try:
+                repo, path, ref = github_client.parse_input(
+                    request.form.get("github_url"), request.form.get("github_path"), request.form.get("github_ref")
+                )
+                info = github_client.fetch_file(repo, path, ref, get_github_token(user))
+            except github_client.GithubError as e:
+                raise UserError(str(e))
+            source_lang = EXT_LANG.get(os.path.splitext(path)[1].lower())
+            if not source_lang:
+                raise UserError("סוג הקובץ לא נתמך. סיומות נתמכות: " + ", ".join(sorted(EXT_LANG)))
+            code = info["content"].replace("\r\n", "\n")
+            gh_meta = {"repo": repo, "path": path, "ref": ref, "sha": info["sha"]}
+        else:
+            source_lang = (request.form.get("source_lang") or "").strip()
+            if not LANG_RE.match(source_lang):
+                raise UserError("שפת מקור לא תקינה.")
+            code = request.form.get("code") or ""
+            force_ai = request.form.get("force_ai") == "1"
 
-    validate_python(final_code)
+        if not code.strip():
+            raise UserError("הקובץ בריפו ריק." if gh_meta else "לא הוזן קוד.")
+        use_ai = not (source_lang.lower() in PY_LANGS and not force_ai)
+        limit = MAX_AI_CODE_CHARS if use_ai else MAX_CODE_CHARS
+        if len(code) > limit:
+            hint = " אפשר לפצל לכמה שרתים קטנים, או להשתמש בקוד Python ישירות (בלי AI)." if use_ai else ""
+            raise UserError(f"הקוד ארוך מדי: {len(code):,} תווים, והמקסימום כאן הוא {limit:,}.{hint}")
+
+        if not use_ai:
+            final_code = code  # Python: אין צורך ב-AI
+        else:
+            provider = request.form.get("provider")
+            api_key = get_api_key(user, provider)
+            prompt = ai_providers.build_translation_prompt(source_lang, code)
+            try:
+                final_code = strip_fences(ai_providers.generate(provider, api_key, prompt))
+            except ai_providers.ProviderError as e:
+                raise UserError(f"שגיאה מספק ה-AI: {e}")
+        validate_python(final_code)
 
     route = Route.query.filter_by(user_id=user.id, route_name=route_name).first()
     if not route:
@@ -351,6 +440,14 @@ def deploy_server():
     route.pending_code = final_code
     if route.live_code is None:
         route.status = "pending"
+    if gh_meta:
+        if route.source is None:
+            route.source = RouteSource(**gh_meta)
+        else:
+            for key, value in gh_meta.items():
+                setattr(route.source, key, value)
+    else:
+        route.source = None  # הדבקה ידנית מנתקת את הקישור ל-GitHub
     db.session.commit()
 
     if user.is_admin:  # המנהל לא צריך לאשר לעצמו
@@ -377,17 +474,21 @@ def get_editable_route(route_id):
     if not (route.pending_code or route.live_code):
         abort(404)
     return route
-
-
 def render_edit(route, code, status=200, **extra):
     user = current_user()
+    bundle = None
+    if bundles.is_bundle(code):
+        entry, files = bundles.unpack(code)
+        bundle = {"entry": entry, "files": files}
     html = render_template(
         "edit.html",
         route=route,
         code=code,
+        bundle=bundle,
         max_code_chars=MAX_CODE_CHARS,
         providers=ai_providers.PROVIDERS,
         saved_providers={k.provider for k in user.api_keys},
+        env_names=sorted(v.name for v in route.env_vars),
         **extra,
     )
     return html, status
@@ -404,14 +505,34 @@ def edit_route(route_id):
     if request.method == "GET":
         return render_edit(route, current)
 
-    code = (request.form.get("code") or "").replace("\r\n", "\n")
+    is_bundle = bundles.is_bundle(current)
+    code = current if is_bundle else (request.form.get("code") or "").replace("\r\n", "\n")
     try:
-        if not code.strip():
-            raise UserError("הקוד ריק.")
-        if len(code) > MAX_CODE_CHARS:
-            raise UserError(f"הקוד ארוך מדי: {len(code):,} תווים, והמקסימום הוא {MAX_CODE_CHARS:,}.")
-        validate_python(code)
-        if code.strip() == current.strip():
+        if is_bundle:
+            entry, old_files = bundles.unpack(current)
+            try:
+                files = json.loads(request.form.get("bundle_json") or "")
+                if not isinstance(files, dict):
+                    raise ValueError
+            except ValueError:
+                raise UserError("נתוני הקבצים לא התקבלו כראוי. רענן את הדף ונסה שוב.")
+            files = {p: str(c).replace("\r\n", "\n") for p, c in sorted(files.items())}
+            code = bundles.pack(files, entry)  # נשמר כאן כדי שהעריכה לא תאבד אם יש שגיאה
+            if set(files) != set(old_files):
+                raise UserError("אי אפשר להוסיף או למחוק קבצים בעורך. לשינוי מבנה, ייבא מחדש מ-GitHub.")
+            try:
+                bundles.validate(files, entry)
+            except bundles.BundleError as e:
+                raise UserError(str(e))
+            unchanged = files == old_files
+        else:
+            if not code.strip():
+                raise UserError("הקוד ריק.")
+            if len(code) > MAX_CODE_CHARS:
+                raise UserError(f"הקוד ארוך מדי: {len(code):,} תווים, והמקסימום הוא {MAX_CODE_CHARS:,}.")
+            validate_python(code)
+            unchanged = code.strip() == current.strip()
+        if unchanged:
             flash("לא בוצעו שינויים.", "info")
             return redirect(url_for("edit_route", route_id=route.id))
 
@@ -436,6 +557,9 @@ def edit_route_ai(route_id):
     """מבקש מה-AI לשנות את הקוד שבעורך. התוצאה רק נטענת לעורך להצגה, ושום דבר לא נשמר עד לחיצה על שמירה."""
     user = current_user()
     route = get_editable_route(route_id)
+    if bundles.is_bundle(route.pending_code or route.live_code):
+        flash("עריכה בעזרת AI זמינה רק לשרתים של קובץ בודד.", "danger")
+        return redirect(url_for("edit_route", route_id=route.id))
     code = (request.form.get("code") or route.pending_code or route.live_code or "").replace("\r\n", "\n")
     instruction = (request.form.get("instruction") or "").strip()
     try:
@@ -469,33 +593,141 @@ def delete_route(route_id):
     if not route or (route.user_id != user.id and not user.is_admin):
         abort(404)
     path = route.full_path
-    _subapps.pop(route.id, None)  # ב-workers אחרים מספיק שהשורה נמחקה מה-DB: הבקשות הבאות יקבלו 404
+    old = _subapps.pop(route.id, None)  # ב-workers אחרים מספיק שהשורה נמחקה מה-DB: הבקשות הבאות יקבלו 404
+    if old and old[2]:
+        bundles.unload(old[2])
     db.session.delete(route)  # היומנים נמחקים יחד איתו (cascade)
     db.session.commit()
     flash(f"השרת {path} נמחק.", "success")
     return redirect(url_for("index"))
 
 
+@app.post("/sync/<int:route_id>")
+@login_required
+def sync_route(route_id):
+    """מושך את הגרסה העדכנית מ-GitHub (קובץ בודד או ריפו מרובה קבצים). כמו כל שינוי קוד: ממתין לאישור מנהל (מנהל: מיידי)."""
+    user = current_user()
+    route = get_editable_route(route_id)
+    src = route.source
+    if src is None:
+        abort(404)
+    current = route.pending_code or route.live_code
+    is_bundle = bundles.is_bundle(current)
+    token = get_github_token(route.owner)
+    try:
+        if is_bundle:
+            info = github_client.fetch_repo(src.repo, src.ref, src.path, token)
+        elif src.path.lower().endswith(".py"):
+            info = github_client.fetch_file(src.repo, src.path, src.ref, token)
+        else:
+            raise UserError("סנכרון אוטומטי נתמך רק לקבצי Python ולריפו מרובה קבצים. לשפות אחרות יש לייבא מחדש מטופס הפריסה.")
+    except github_client.GithubError as e:
+        raise UserError(str(e))
+    if info["sha"] == src.sha:
+        flash("אין שינויים בריפו מאז הסנכרון האחרון.", "info")
+        return redirect(url_for("edit_route", route_id=route.id))
+
+    if is_bundle:
+        old_entry, _ = bundles.unpack(current)
+        try:
+            entry = old_entry if old_entry in info["files"] else bundles.pick_entry(info["files"])
+            bundles.validate(info["files"], entry)
+        except bundles.BundleError as e:
+            raise UserError(str(e))
+        code = bundles.pack(info["files"], entry)
+    else:
+        code = info["content"].replace("\r\n", "\n")
+        if not code.strip():
+            raise UserError("הקובץ בריפו ריק.")
+        if len(code) > MAX_CODE_CHARS:
+            raise UserError(f"הקובץ ארוך מדי: {len(code):,} תווים, והמקסימום הוא {MAX_CODE_CHARS:,}.")
+        validate_python(code)
+
+    src.sha = info["sha"]
+    route.pending_code = code
+    db.session.commit()
+    if user.is_admin:
+        activate(route)
+        flash("נמשכה גרסה חדשה מ-GitHub והשרת עודכן.", "success")
+    else:
+        flash("נמשכה גרסה חדשה מ-GitHub, והיא ממתינה לאישור מנהל.", "success")
+    return redirect(url_for("index"))
+
+
+@app.post("/edit/<int:route_id>/env")
+@login_required
+def set_env_var(route_id):
+    route = get_editable_route(route_id)
+    name = (request.form.get("name") or "").strip()
+    value = (request.form.get("value") or "").strip()
+    try:
+        if not ENV_NAME_RE.match(name):
+            raise UserError("שם משתנה: אותיות אנגליות, ספרות ו-_ בלבד, בלי להתחיל בספרה (עד 64 תווים).")
+        if not value:
+            raise UserError("הערך ריק.")
+        if len(value) > MAX_ENV_VALUE:
+            raise UserError(f"הערך ארוך מדי (עד {MAX_ENV_VALUE:,} תווים).")
+        row = EnvVar.query.filter_by(route_id=route.id, name=name).first()
+        if row is None and len(route.env_vars) >= MAX_ENV_VARS:
+            raise UserError(f"אפשר להגדיר עד {MAX_ENV_VARS} משתנים לשרת.")
+    except UserError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("edit_route", route_id=route.id))
+
+    encrypted = fernet.encrypt(value.encode()).decode()
+    if row:
+        row.encrypted_value = encrypted
+    else:
+        db.session.add(EnvVar(route_id=route.id, name=name, encrypted_value=encrypted))
+    if route.live_code:
+        route.live_version += 1  # מרענן את ה-cache בכל ה-workers: השרת יעלה מחדש עם הערך החדש
+    db.session.commit()
+    flash(f"המשתנה {name} נשמר.", "success")
+    return redirect(url_for("edit_route", route_id=route.id))
+
+
+@app.post("/edit/<int:route_id>/env/delete")
+@login_required
+def delete_env_var(route_id):
+    route = get_editable_route(route_id)
+    name = (request.form.get("name") or "").strip()
+    row = EnvVar.query.filter_by(route_id=route.id, name=name).first()
+    if row:
+        db.session.delete(row)
+        if route.live_code:
+            route.live_version += 1
+        db.session.commit()
+        flash(f"המשתנה {name} נמחק.", "success")
+    return redirect(url_for("edit_route", route_id=route.id))
+
+
 # --- הרצת השרתים הווירטואליים: כל אחד כאפליקציית Flask קטנה משלו, נטענת מה-DB לפי דרישה ---
 _subapps = {}  # route_id -> (live_version, flask_app). cache לכל worker, מתרענן לפי live_version
-
-
-def build_subapp(code, label, ident):
+def build_subapp(code, label, ident, env=None, tag=0):
+    """בונה אפליקציית WSGI מקוד שרת. מחזיר (אפליקציה, שם חבילה לשחרור, או None לשרת של קובץ בודד)."""
+    if bundles.is_bundle(code):
+        _, files = bundles.unpack(code)
+        deps.ensure_dependencies(bundles.external_imports_code(files))
+        try:
+            return bundles.load(code, ident, tag, env)
+        except bundles.BundleError as e:
+            raise RuntimeError(str(e))
     deps.ensure_dependencies(code)
     module = ModuleType(f"user_route_{ident}")
+    module.__dict__["env"] = MappingProxyType(dict(env or {}))  # משתני הסביבה של השרת הזה בלבד
     exec(compile(code, f"<user:{label}>", "exec"), module.__dict__)
     bp = getattr(module, "bp", None)
     if not isinstance(bp, Blueprint):
         raise RuntimeError("bp is not a Flask Blueprint")
     sub = Flask(f"user_route_{ident}")
     sub.register_blueprint(bp)
-    return sub
-
-
+    return sub, None
 def activate(route):
     """מעביר קוד ממתין ל-live. נקרא רק אחרי אישור מנהל (או כשהמנהל עצמו פורס)."""
     try:
-        build_subapp(route.pending_code, route.full_path, route.id)  # בדיקת טעינה לפני שמפעילים
+        _, pkg = build_subapp(route.pending_code, route.full_path, route.id, route_env(route), tag="dry")  # בדיקת טעינה
+        if pkg:
+            bundles.unload(pkg)  # זו הייתה רק בדיקה
     except Exception as e:
         raise UserError(f"הקוד לא נטען: {type(e).__name__}: {str(e)[:200]}")
     route.live_code = route.pending_code
@@ -503,14 +735,14 @@ def activate(route):
     route.live_version += 1
     route.status = "active"
     db.session.commit()
-
-
 def get_subapp(route):
     cached = _subapps.get(route.id)
     if cached and cached[0] == route.live_version:
         return cached[1]
-    sub = build_subapp(route.live_code, route.full_path, route.id)
-    _subapps[route.id] = (route.live_version, sub)
+    sub, pkg = build_subapp(route.live_code, route.full_path, route.id, route_env(route), tag=route.live_version)
+    if cached and cached[2]:
+        bundles.unload(cached[2])  # שחרור הגרסה הקודמת של חבילה מרובת קבצים
+    _subapps[route.id] = (route.live_version, sub, pkg)
     return sub
 
 
@@ -576,6 +808,14 @@ def index():
     return render_template("dashboard.html", **ctx)
 
 
+def analyze_libs(code):
+    """מצב הספריות החיצוניות שהקוד (או החבילה) צריך, לתצוגה בדף הבדיקה."""
+    if bundles.is_bundle(code):
+        _, files = bundles.unpack(code)
+        return deps.analyze(bundles.external_imports_code(files))
+    return deps.analyze(code)
+
+
 @app.route("/admin/review/<int:route_id>")
 @admin_required
 def review_route(route_id):
@@ -583,18 +823,20 @@ def review_route(route_id):
     if not route or not route.pending_code:
         abort(404)
     diff_lines = None
-    if route.live_code:  # עדכון לשרת קיים: מציגים מה בדיוק השתנה
-        diff_lines = [
-            line.rstrip("\n")
-            for line in difflib.unified_diff(
-                route.live_code.splitlines(True),
-                route.pending_code.splitlines(True),
-                "גרסה פעילה",
-                "גרסה חדשה",
-                n=3,
-            )
-        ]
-    return render_template("review.html", route=route, libs=deps.analyze(route.pending_code), diff_lines=diff_lines)
+    bundle = None
+    if bundles.is_bundle(route.pending_code):
+        entry, files = bundles.unpack(route.pending_code)
+        changes = None
+        if route.live_code and bundles.is_bundle(route.live_code):  # עדכון לשרת קיים: רק מה ששונה
+            _, old_files = bundles.unpack(route.live_code)
+            changes = [
+                {"path": p, "status": st, "diff": make_diff(old_files.get(p, ""), files.get(p, ""), "פעיל", "חדש")}
+                for p, st in bundles.diff_files(old_files, files)
+            ]
+        bundle = {"entry": entry, "files": files, "changes": changes}
+    elif route.live_code and not bundles.is_bundle(route.live_code):
+        diff_lines = make_diff(route.live_code, route.pending_code, "גרסה פעילה", "גרסה חדשה")
+    return render_template("review.html", route=route, libs=analyze_libs(route.pending_code), diff_lines=diff_lines, bundle=bundle)
 
 
 @app.post("/admin/review/<int:route_id>/approve")
