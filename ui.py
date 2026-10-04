@@ -215,7 +215,7 @@ DASHBOARD = """{% extends 'base.html' %}
 
         <div id="pyBox" class="form-check mb-3 d-none">
           <input class="form-check-input" type="checkbox" name="force_ai" value="1" id="force_ai">
-          <label class="form-check-label" for="force_ai">לתרגם גם את קוד ה-Python דרך AI (לסקריפט שאינו Blueprint)</label>
+          <label class="form-check-label" for="force_ai">לתרגם גם את קוד ה-Python דרך AI (לסקריפט שאינו אפליקציית Flask)</label>
         </div>
         <div id="aiBox" class="mb-3 d-none">
           <label class="form-label">ספק AI לתרגום</label>
@@ -361,7 +361,7 @@ DASHBOARD = """{% extends 'base.html' %}
       : file
       ? 'הקובץ נמשך מ-GitHub. קובץ py נשלח ישירות לבדיקה, בלי AI. סוגי קבצים אחרים יתורגמו ב-AI של הספק שבחרת (נדרש מפתח שמור).'
       : (useAi ? 'הקוד יתורגם ל-Flask על ידי ספק ה-AI שבחרת (נדרש מפתח API שמור).'
-               : 'קוד Python נשלח ישירות לבדיקה, בלי AI. הוא חייב להגדיר Blueprint בשם bp עם נתיבים יחסיים, למשל /.');
+               : 'קוד Python נשלח ישירות לבדיקה, בלי AI. אפשר להדביק אפליקציית Flask רגילה (app = Flask(__name__)) בלי שינוי.');
     var max=parseInt(useAi?code.dataset.maxAi:code.dataset.maxDirect,10), n=code.value.length;
     cnt.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים'+(useAi?' (תרגום ב-AI)':' (Python ישיר)');
     cnt.classList.toggle('text-danger',n>max);
@@ -475,7 +475,7 @@ EDIT = """{% extends 'base.html' %}
 {% endif %}
 <div class="alert alert-light border small">
   {% if current_user.is_admin %}כמנהל, שמירה מפעילה את השינוי מיד.{% else %}אחרי השמירה השינוי נשלח לאישור מנהל. עד אז הגרסה הפעילה ממשיכה לרוץ בלי שינוי.{% endif %}
-  הקוד חייב להגדיר Blueprint בשם <code>bp</code> עם נתיבים יחסיים.
+  הקוד צריך להגדיר <code>app = Flask(__name__)</code> (או Blueprint בשם <code>bp</code>).
 </div>
 
 {% if route.source %}
