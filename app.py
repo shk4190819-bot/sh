@@ -3,6 +3,7 @@ import difflib
 import json
 import logging
 import os
+import random
 import re
 import secrets
 from functools import wraps
@@ -21,7 +22,7 @@ import ai_providers
 import bundles
 import deps
 import github_client
-from models import ApiKey, EnvVar, Log, Route, RouteSource, User, db
+from models import ApiKey, EnvVar, Log, Route, RouteSource, User, db, utcnow
 from ui import TEMPLATES
 
 # ==========================================
@@ -83,7 +84,7 @@ google = oauth.register(
 USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,29}$")
 ROUTE_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,39}$")
 LANG_RE = re.compile(r"^[\w+#.\- ]{1,30}$")
-RESERVED = {"admin", "auth", "login", "logout", "static", "settings", "deploy", "api", "review"}
+RESERVED = {"admin", "auth", "login", "logout", "static", "settings", "deploy", "api", "review", "healthz", "new", "account"}
 PY_LANGS = {"python", "py", "python3", "flask"}
 # מגבלות אורך קוד (ניתנות לשינוי במשתני סביבה ב-Render)
 MAX_CODE_CHARS = int(os.environ.get("MAX_CODE_CHARS", "200000"))  # Python ישיר: נשמר כמו שהוא, בלי AI
@@ -114,6 +115,10 @@ def handle_user_error(e):
         ), 400
     if current_user():
         flash(str(e), "danger")
+        if request.endpoint == "deploy_server":
+            return redirect(url_for("new_server"))
+        if request.endpoint in ("update_key", "update_github"):
+            return redirect(url_for("account"))
         return redirect(url_for("index"))
     return render_template("error.html", message=str(e)), 400
 
@@ -301,7 +306,7 @@ def update_github():
             db.session.delete(row)
             db.session.commit()
         flash("החיבור ל-GitHub נותק.", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("account"))
     token = (request.form.get("token") or "").strip()
     if not token:
         raise UserError("לא הוזן טוקן.")
@@ -316,7 +321,7 @@ def update_github():
         db.session.add(ApiKey(user_id=user.id, provider="github", encrypted_key=encrypted))
     db.session.commit()
     flash(f"GitHub חובר בהצלחה (החשבון {login}).", "success")
-    return redirect(url_for("index"))
+    return redirect(url_for("account"))
 
 
 @app.post("/settings/key")
@@ -342,7 +347,7 @@ def update_key():
             db.session.add(ApiKey(user_id=user.id, provider=provider, encrypted_key=encrypted))
     db.session.commit()
     flash("המפתח נמחק." if request.form.get("action") == "delete" else "המפתח נשמר בהצלחה.", "success")
-    return redirect(url_for("index"))
+    return redirect(url_for("account"))
 
 
 # ==========================================
@@ -747,16 +752,56 @@ def get_subapp(route):
     return sub
 
 
+MAX_LOGS_PER_ROUTE = int(os.environ.get("MAX_LOGS_PER_ROUTE", "1000"))
+
+
+def prune_logs(route_id):
+    """משאיר רק את היומנים האחרונים של שרת, כדי שהמסד לא יתנפח (חשוב במסד חינמי)."""
+    cutoff = (
+        db.session.query(Log.id).filter_by(route_id=route_id).order_by(Log.id.desc()).offset(MAX_LOGS_PER_ROUTE).limit(1).scalar()
+    )
+    if cutoff:
+        Log.query.filter(Log.route_id == route_id, Log.id <= cutoff).delete(synchronize_session=False)
+        db.session.commit()
+
+
 def record_log(route_id, message):
     try:
         db.session.add(Log(route_id=route_id, message=message[:500]))
         db.session.commit()
+        if random.random() < 0.02:  # ניקוי מדי פעם, לא בכל בקשה
+            prune_logs(route_id)
     except Exception:
         db.session.rollback()
         app.logger.exception("Failed to write log")
 
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+
+@app.route("/healthz")
+def healthz():
+    """בדיקת תקינות ל-Render (Health Check Path). לא נוגע במסד הנתונים."""
+    return "ok", 200, {"Cache-Control": "no-store"}
+
+
+@app.template_filter("timeago")
+def timeago(dt):
+    if not dt:
+        return ""
+    secs = max(0, int((utcnow() - dt).total_seconds()))
+    if secs < 60:
+        return "הרגע"
+    mins = secs // 60
+    if mins < 60:
+        return "לפני דקה" if mins == 1 else f"לפני {mins} דקות"
+    hours = mins // 60
+    if hours < 24:
+        return "לפני שעה" if hours == 1 else f"לפני {hours} שעות"
+    days = hours // 24
+    if days < 30:
+        return "לפני יום" if days == 1 else f"לפני {days} ימים"
+    return dt.strftime("%d/%m/%Y")
 
 
 @app.route("/<username>/<route_name>", defaults={"rest": ""}, methods=HTTP_METHODS, strict_slashes=False)
@@ -787,6 +832,26 @@ def dispatch(username, route_name, rest):
 # ==========================================
 # 6. לוח בקרה, אישורי מנהל ולוגים
 # ==========================================
+@app.route("/new")
+@login_required
+def new_server():
+    user = current_user()
+    return render_template(
+        "new.html",
+        providers=ai_providers.PROVIDERS,
+        saved_providers={k.provider for k in user.api_keys},
+        max_code_chars=MAX_CODE_CHARS,
+        max_ai_chars=MAX_AI_CODE_CHARS,
+    )
+
+
+@app.route("/account")
+@login_required
+def account():
+    user = current_user()
+    return render_template("account.html", providers=ai_providers.PROVIDERS, saved_providers={k.provider for k in user.api_keys})
+
+
 @app.route("/")
 @login_required
 def index():
