@@ -55,16 +55,19 @@ def _parse(path, source):
         raise BundleError(f"שגיאת תחביר ב-{path} (שורה {e.lineno}): {e.msg}")
 
 
+APP_NAMES = ("bp", "app", "application")
+
+
 def _defines_bp(tree):
-    """bp = ... או from x import bp (ברמה העליונה של הקובץ)."""
+    """bp / app / application = ... או from x import app (ברמה העליונה של הקובץ)."""
     for n in tree.body:
-        if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "bp" for t in n.targets):
+        if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in APP_NAMES for t in n.targets):
             return True
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name) and n.target.id == "bp":
+        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name) and n.target.id in APP_NAMES:
             return True
         if isinstance(n, (ast.ImportFrom, ast.Import)):
             for a in n.names:
-                if (a.asname or a.name.split(".")[0]) == "bp":
+                if (a.asname or a.name.split(".")[0]) in APP_NAMES:
                     return True
     return False
 
@@ -108,7 +111,7 @@ def pick_entry(files, requested=None):
         except SyntaxError:
             continue
     if not candidates:
-        raise BundleError("לא נמצא קובץ שמגדיר Blueprint בשם bp. ציין קובץ ראשי, או התאם את הקוד (bp = Blueprint(...)).")
+        raise BundleError("לא נמצא קובץ שמגדיר אפליקציית Flask בשם app (או Blueprint בשם bp). ציין קובץ ראשי.")
 
     def rank(p):
         base = p.rsplit("/", 1)[-1]
@@ -134,7 +137,7 @@ def validate(files, entry):
     if not _module_name(entry):
         raise BundleError("שם הקובץ הראשי חייב להיות מורכב מאותיות באנגלית, ספרות וקו תחתון בלבד (למשל app.py).")
     if not _defines_bp(trees[entry]):
-        raise BundleError(f"הקובץ הראשי {entry} חייב להגדיר Blueprint בשם bp, למשל: bp = Blueprint('x', __name__)")
+        raise BundleError(f"הקובץ הראשי {entry} חייב להגדיר app = Flask(__name__) (או bp = Blueprint(...)).")
 
 
 def external_imports_code(files):
@@ -251,6 +254,45 @@ def _install_finder():
         sys.meta_path.insert(0, _finder)
 
 
+_TEMPLATE_EXTS = (".html", ".htm", ".txt", ".xml", ".jinja", ".j2")
+
+
+def _after_dir(path, dirname):
+    """app/templates/a/b.html -> a/b.html (רק אם templates / static הוא אחד מתיקיות הנתיב)."""
+    parts = path.split("/")
+    if dirname in parts[:-1]:
+        return "/".join(parts[parts.index(dirname, 0, len(parts) - 1) + 1:])
+    return None
+
+
+def attach_assets(flask_app, files):
+    """templates ו-static מהזיכרון: אין דיסק, אז הקבצים מוגשים מתוך החבילה."""
+    from jinja2 import DictLoader
+    from flask import Response, abort
+    import mimetypes
+
+    templates, static = {}, {}
+    for p, s in files.items():
+        t = _after_dir(p, "templates") if p.lower().endswith(_TEMPLATE_EXTS) else None
+        if t:
+            templates[t] = s
+        st = _after_dir(p, "static")
+        if st:
+            static[st] = s
+    if templates:
+        flask_app.jinja_loader = DictLoader(templates)
+    if static:
+        def serve_static(filename):
+            if filename not in static:
+                abort(404)
+            return Response(static[filename], mimetype=mimetypes.guess_type(filename)[0] or "text/plain")
+
+        if "static" in flask_app.view_functions:
+            flask_app.view_functions["static"] = serve_static
+        else:
+            flask_app.add_url_rule("/static/<path:filename>", endpoint="static", view_func=serve_static)
+
+
 def unload(pkg):
     """משחרר חבילה שנטענה: מוחק אותה מ-sys.modules ומהרישום."""
     if not pkg:
@@ -294,10 +336,17 @@ def load(code, ident, tag, env=None):
         try:
             module = importlib.import_module(f"{pkg}.{entry_mod}")
             bp = getattr(module, "bp", None)
-            if not isinstance(bp, Blueprint):
-                raise BundleError("bp בקובץ הראשי אינו Flask Blueprint.")
-            sub = Flask(f"user_route_{ident}")
-            sub.register_blueprint(bp)
+            if isinstance(bp, Blueprint):
+                sub = Flask(f"user_route_{ident}")
+                sub.register_blueprint(bp)
+            else:
+                sub = getattr(module, "app", None)
+                if sub is None:
+                    sub = getattr(module, "application", None)
+                if sub is None or not callable(sub):
+                    raise BundleError("בקובץ הראשי לא נמצא app (אפליקציית Flask) או bp (Blueprint).")
+            if isinstance(sub, Flask):
+                attach_assets(sub, files)
         except BundleError:
             unload(pkg)
             raise
