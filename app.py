@@ -14,6 +14,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from flask import Blueprint, Flask, Response, abort, flash, redirect, render_template, request, session, url_for
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from jinja2 import DictLoader
+from sqlalchemy import func as sa_func, inspect as sa_inspect, or_ as sa_or, text as sa_text
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -69,8 +70,22 @@ logging.basicConfig(level=logging.INFO)
 csrf = CSRFProtect(app)
 db.init_app(app)
 deps.add_to_path()
+def ensure_schema():
+    """מוסיף עמודות חדשות לטבלאות קיימות (create_all לא משנה טבלה שכבר קיימת).
+    משתמשים שכבר היו במערכת נחשבים מאושרים."""
+    cols = {c["name"] for c in sa_inspect(db.engine).get_columns("users")}
+    if "is_approved" not in cols:
+        true_lit = "1" if db.engine.dialect.name == "sqlite" else "TRUE"
+        try:
+            db.session.execute(sa_text(f"ALTER TABLE users ADD COLUMN is_approved BOOLEAN NOT NULL DEFAULT {true_lit}"))
+            db.session.commit()
+        except Exception:  # worker אחר הספיק להוסיף את העמודה
+            db.session.rollback()
+
+
 with app.app_context():
     db.create_all()
+    ensure_schema()
 
 oauth = OAuth(app)
 google = oauth.register(
@@ -84,7 +99,7 @@ google = oauth.register(
 USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,29}$")
 ROUTE_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,39}$")
 LANG_RE = re.compile(r"^[\w+#.\- ]{1,30}$")
-RESERVED = {"admin", "auth", "login", "logout", "static", "settings", "deploy", "api", "review", "healthz", "new", "account"}
+RESERVED = {"admin", "auth", "login", "logout", "static", "settings", "deploy", "api", "review", "healthz", "new", "account", "pending"}
 PY_LANGS = {"python", "py", "python3", "flask"}
 # מגבלות אורך קוד (ניתנות לשינוי במשתני סביבה ב-Render)
 MAX_CODE_CHARS = int(os.environ.get("MAX_CODE_CHARS", "200000"))  # Python ישיר: נשמר כמו שהוא, בלי AI
@@ -146,15 +161,26 @@ def current_user():
 
 @app.context_processor
 def inject_globals():
-    return {"current_user": current_user(), "google_enabled": bool(os.environ.get("GOOGLE_CLIENT_ID"))}
+    user = current_user()
+    pending_users_count = User.query.filter_by(is_approved=False).count() if user and user.is_admin else 0
+    return {
+        "current_user": user,
+        "google_enabled": bool(os.environ.get("GOOGLE_CLIENT_ID")),
+        "pending_users_count": pending_users_count,
+    }
 
 
 def login_required(f):
+    """דורש משתמש מחובר ומאושר. משתמש שעוד לא אושר מופנה לדף ההמתנה."""
+
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if current_user() is None:
+        user = current_user()
+        if user is None:
             session.clear()
             return redirect(url_for("login_page"))
+        if not (user.is_approved or user.is_admin):
+            return redirect(url_for("pending_page"))
         return f(*args, **kwargs)
 
     return wrapper
@@ -173,8 +199,14 @@ def admin_required(f):
 
 def start_session(user):
     session.clear()  # מונע session fixation
+    changed = False
     if ADMIN_USERNAME and user.username == ADMIN_USERNAME and user.password_hash and not user.is_admin:
         user.is_admin = True
+        changed = True
+    if user.is_admin and not user.is_approved:  # מנהל תמיד מאושר
+        user.is_approved = True
+        changed = True
+    if changed:
         db.session.commit()
     session["user_id"] = user.id
 
@@ -196,7 +228,8 @@ def login_page():
     if request.method == "GET":
         if current_user():
             return redirect(url_for("index"))
-        return render_template("login.html")
+        tab = request.args.get("tab")
+        return render_template("login.html", tab=tab if tab in ("login", "register") else "login")
 
     username = (request.form.get("username") or "").strip().lower()
     password = request.form.get("password") or ""
@@ -221,7 +254,13 @@ def login_page():
         abort(400)
 
     start_session(user)
-    flash("נרשמת בהצלחה, ברוך הבא!" if action == "register" else "התחברת בהצלחה.", "success")
+    if action == "register":
+        if user.is_approved or user.is_admin:
+            flash("נרשמת בהצלחה, ברוך הבא!", "success")
+        else:
+            flash("נרשמת בהצלחה. החשבון ממתין לאישור מנהל.", "success")
+    else:
+        flash("התחברת בהצלחה.", "success")
     return redirect(url_for("index"))
 
 
@@ -256,7 +295,18 @@ def auth_callback():
 @app.post("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("login_page"))
+    return redirect(url_for("index"))
+
+
+@app.route("/pending")
+def pending_page():
+    """דף המתנה למשתמש שנרשם ועוד לא אושר."""
+    user = current_user()
+    if user is None:
+        return redirect(url_for("login_page"))
+    if user.is_approved or user.is_admin:
+        return redirect(url_for("index"))
+    return render_template("pending.html")
 
 
 # ==========================================
@@ -451,11 +501,8 @@ def deploy_server():
         route.source = None  # הדבקה ידנית מנתקת את הקישור ל-GitHub
     db.session.commit()
 
-    if user.is_admin:  # המנהל לא צריך לאשר לעצמו
-        activate(route)
-        flash(f"השרת פעיל בכתובת {route.full_path}", "success")
-    else:
-        flash("הקוד נשלח לבדיקה ויופעל אחרי אישור מנהל.", "success")
+    activate(route)  # משתמש מאושר: השרת עולה מיד, בלי אישור מנהל
+    flash(f"השרת פעיל בכתובת {route.full_path}", "success")
     return redirect(url_for("index"))
 
 
@@ -539,11 +586,8 @@ def edit_route(route_id):
 
         route.pending_code = code
         db.session.commit()
-        if user.is_admin:
-            activate(route)
-            flash("השינויים נשמרו והשרת עודכן.", "success")
-        else:
-            flash("השינויים נשלחו לבדיקה. הגרסה הפעילה ממשיכה לרוץ עד שמנהל יאשר.", "success")
+        activate(route)
+        flash("השינויים נשמרו והשרת עודכן.", "success")
     except UserError as e:
         # נשארים בעורך עם הקוד שהוקלד, כדי שלא יאבד
         db.session.rollback()
@@ -586,6 +630,13 @@ def edit_route_ai(route_id):
     return render_edit(route, new_code, instruction=instruction, ai_diff=diff_lines, original_code=code)
 
 
+def drop_route_cache(route):
+    """משחרר את השרת מה-cache של ה-worker הנוכחי. ב-workers אחרים מספיק שהשורה נמחקה מה-DB: הבקשות הבאות יקבלו 404."""
+    old = _subapps.pop(route.id, None)
+    if old and old[2]:
+        bundles.unload(old[2])
+
+
 @app.post("/delete/<int:route_id>")
 @login_required
 def delete_route(route_id):
@@ -594,12 +645,13 @@ def delete_route(route_id):
     if not route or (route.user_id != user.id and not user.is_admin):
         abort(404)
     path = route.full_path
-    old = _subapps.pop(route.id, None)  # ב-workers אחרים מספיק שהשורה נמחקה מה-DB: הבקשות הבאות יקבלו 404
-    if old and old[2]:
-        bundles.unload(old[2])
+    owner_id = route.user_id
+    drop_route_cache(route)
     db.session.delete(route)  # היומנים נמחקים יחד איתו (cascade)
     db.session.commit()
     flash(f"השרת {path} נמחק.", "success")
+    if owner_id != user.id:  # מנהל שמחק שרת של משתמש אחר חוזר לדף המשתמש
+        return redirect(url_for("admin_user", user_id=owner_id))
     return redirect(url_for("index"))
 
 
@@ -647,11 +699,8 @@ def sync_route(route_id):
     src.sha = info["sha"]
     route.pending_code = code
     db.session.commit()
-    if user.is_admin:
-        activate(route)
-        flash("נמשכה גרסה חדשה מ-GitHub והשרת עודכן.", "success")
-    else:
-        flash("נמשכה גרסה חדשה מ-GitHub, והיא ממתינה לאישור מנהל.", "success")
+    activate(route)
+    flash("נמשכה גרסה חדשה מ-GitHub והשרת עודכן.", "success")
     return redirect(url_for("index"))
 
 
@@ -810,7 +859,12 @@ def timeago(dt):
 def dispatch(username, route_name, rest):
     route = (
         Route.query.join(User)
-        .filter(User.username == username, Route.route_name == route_name, Route.status == "active")
+        .filter(
+            User.username == username,
+            Route.route_name == route_name,
+            Route.status == "active",
+            sa_or(User.is_approved.is_(True), User.is_admin.is_(True)),  # משתמש שהושעה: השרתים שלו לא מוגשים
+        )
         .first()
     )
     if route is None or not route.live_code:
@@ -853,22 +907,27 @@ def account():
 
 
 @app.route("/")
-@login_required
 def index():
     user = current_user()
+    if user is None:
+        return render_template("landing.html")  # דף פתיחה לפני כניסה/הרשמה
+    if not (user.is_approved or user.is_admin):
+        return redirect(url_for("pending_page"))
     routes = Route.query.filter_by(user_id=user.id).order_by(Route.created_at.desc()).all()
     ctx = {
         "routes": routes,
         "providers": ai_providers.PROVIDERS,
         "saved_providers": {k.provider for k in user.api_keys},
         "pending": [],
+        "pending_users": [],
         "max_code_chars": MAX_CODE_CHARS,
         "max_ai_chars": MAX_AI_CODE_CHARS,
         "users_count": 0,
         "active_count": 0,
     }
     if user.is_admin:
-        ctx["pending"] = Route.query.filter(Route.pending_code.isnot(None)).all()
+        ctx["pending"] = Route.query.filter(Route.pending_code.isnot(None), Route.live_code.is_(None)).all()  # שאריות מלפני המעבר לאישור משתמשים
+        ctx["pending_users"] = User.query.filter_by(is_approved=False).order_by(User.created_at.asc()).all()
         ctx["users_count"] = User.query.count()
         ctx["active_count"] = Route.query.filter_by(status="active").count()
     return render_template("dashboard.html", **ctx)
@@ -928,6 +987,83 @@ def reject_route(route_id):
     db.session.commit()
     flash("הבקשה נדחתה.", "info")
     return redirect(url_for("index"))
+
+
+# ==========================================
+# 7. ניהול משתמשים (מנהל)
+# ==========================================
+def get_user_or_404(user_id):
+    target = db.session.get(User, user_id)
+    if not target:
+        abort(404)
+    return target
+
+
+def back_to(default="admin_users", user_id=None):
+    """חזרה למסך שממנו נשלחה הפעולה (רק ערכים מוכרים, לא כתובת חופשית)."""
+    where = request.form.get("back")
+    if where == "index":
+        return redirect(url_for("index"))
+    if where == "user" and user_id:
+        return redirect(url_for("admin_user", user_id=user_id))
+    return redirect(url_for(default))
+
+
+@app.route("/admin/users")
+@admin_required
+def admin_users():
+    users = User.query.order_by(User.is_approved.asc(), User.created_at.desc()).all()
+    counts = dict(db.session.query(Route.user_id, sa_func.count(Route.id)).group_by(Route.user_id).all())
+    return render_template("admin_users.html", users=users, counts=counts)
+
+
+@app.route("/admin/users/<int:user_id>")
+@admin_required
+def admin_user(user_id):
+    target = get_user_or_404(user_id)
+    routes = Route.query.filter_by(user_id=target.id).order_by(Route.created_at.desc()).all()
+    return render_template("admin_user.html", target=target, routes=routes)
+
+
+@app.post("/admin/users/<int:user_id>/approve")
+@admin_required
+def approve_user(user_id):
+    target = get_user_or_404(user_id)
+    target.is_approved = True
+    db.session.commit()
+    flash(f"המשתמש {target.username} אושר.", "success")
+    return back_to(user_id=target.id)
+
+
+@app.post("/admin/users/<int:user_id>/suspend")
+@admin_required
+def suspend_user(user_id):
+    target = get_user_or_404(user_id)
+    if target.is_admin:
+        flash("אי אפשר להשעות מנהל.", "danger")
+        return back_to(user_id=target.id)
+    target.is_approved = False
+    db.session.commit()
+    flash(f"המשתמש {target.username} הושעה. השרתים שלו הפסיקו להיות מוגשים, והקוד נשמר.", "info")
+    return back_to(user_id=target.id)
+
+
+@app.post("/admin/users/<int:user_id>/delete")
+@admin_required
+def delete_user(user_id):
+    target = get_user_or_404(user_id)
+    if target.is_admin:
+        flash("אי אפשר למחוק מנהל.", "danger")
+        return back_to(user_id=target.id)
+    name = target.username
+    for route in target.routes:
+        drop_route_cache(route)
+    db.session.delete(target)  # שרתים, יומנים, משתני סביבה ומפתחות נמחקים יחד איתו (cascade)
+    db.session.commit()
+    flash(f"המשתמש {name} וכל השרתים שלו נמחקו.", "success")
+    if request.form.get("back") == "index":
+        return redirect(url_for("index"))
+    return redirect(url_for("admin_users"))
 
 
 @app.route("/admin/logs/<int:route_id>")
