@@ -3,48 +3,141 @@
 CSRF = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">'
 
 BASE = """<!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html dir="rtl" lang="he" data-bs-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}SH{% endblock %} · SH</title>
+<script>try{document.documentElement.setAttribute('data-bs-theme',localStorage.getItem('sh-theme')||'dark');}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <style>
-:root{--brand:#4f46e5;--brand-d:#4338ca}
-body{font-family:'Heebo',system-ui,sans-serif;background:#f4f5fb;color:#1f2430}
-.card{border:0;border-radius:16px;box-shadow:0 2px 14px rgba(30,30,70,.07)}
-.btn{border-radius:10px;font-weight:500}
-.btn-primary{--bs-btn-bg:var(--brand);--bs-btn-border-color:var(--brand);--bs-btn-hover-bg:var(--brand-d);--bs-btn-hover-border-color:var(--brand-d);--bs-btn-active-bg:var(--brand-d);--bs-btn-active-border-color:var(--brand-d)}
-.form-control,.form-select{border-radius:10px}
-.topbar{background:#fff;border-bottom:1px solid #e8e9f3}
-.brand-mark{width:56px;height:56px;border-radius:16px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;margin:0 auto 14px}
-.brand-sm{width:34px;height:34px;font-size:14px;border-radius:10px;margin:0}
-.nav-pills .nav-link{border-radius:10px;color:#555}
-.nav-pills .nav-link.active{background:var(--brand)}
+:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f6f6f8;--panel:#ffffff;--panel-2:#f0f0f4;--border:#e2e3e9;--text:#14151a;--muted:#6b6f7b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626}
+[data-bs-theme=dark]{--brand:#7377ff;--brand-d:#8a8dff;--bg:#0c0d10;--panel:#131418;--panel-2:#1b1c22;--border:#272930;--text:#e7e8ec;--muted:#8b8f9b;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+body{font-family:'Heebo',system-ui,sans-serif;background:var(--bg);color:var(--text);--bs-body-bg:var(--bg);--bs-body-color:var(--text);--bs-border-color:var(--border);--bs-secondary-color:var(--muted);--bs-tertiary-bg:var(--panel-2);--bs-emphasis-color:var(--text)}
+.text-muted{color:var(--muted)!important}
+a{color:var(--brand)}a:hover{color:var(--brand-d)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:none;color:var(--text)}
+.btn{border-radius:8px;font-weight:500;font-size:.9rem}
+.btn-primary{--bs-btn-bg:var(--brand);--bs-btn-border-color:var(--brand);--bs-btn-color:#fff;--bs-btn-hover-bg:var(--brand-d);--bs-btn-hover-border-color:var(--brand-d);--bs-btn-hover-color:#fff;--bs-btn-active-bg:var(--brand-d);--bs-btn-active-border-color:var(--brand-d);--bs-btn-disabled-bg:var(--brand);--bs-btn-disabled-border-color:var(--brand)}
+.btn-outline-primary{--bs-btn-color:var(--brand);--bs-btn-border-color:var(--border);--bs-btn-hover-bg:var(--panel-2);--bs-btn-hover-color:var(--brand);--bs-btn-hover-border-color:var(--brand);--bs-btn-active-bg:var(--panel-2);--bs-btn-active-color:var(--brand)}
+.btn-outline-secondary{--bs-btn-color:var(--text);--bs-btn-border-color:var(--border);--bs-btn-hover-bg:var(--panel-2);--bs-btn-hover-color:var(--text);--bs-btn-hover-border-color:var(--muted);--bs-btn-active-bg:var(--panel-2);--bs-btn-active-color:var(--text)}
+.btn-outline-danger{--bs-btn-color:var(--bad);--bs-btn-border-color:var(--border);--bs-btn-hover-bg:var(--bad);--bs-btn-hover-border-color:var(--bad);--bs-btn-hover-color:#fff}
+.form-control,.form-select{background-color:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)}
+.form-control:focus,.form-select:focus{background-color:var(--bg);color:var(--text);border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 25%,transparent)}
+.form-control::placeholder{color:var(--muted);opacity:.7}
+.form-text,.form-label{color:var(--muted)}
+.form-label{font-size:.85rem;font-weight:500}
+.table{--bs-table-bg:transparent;--bs-table-color:var(--text);--bs-table-border-color:var(--border);--bs-table-hover-bg:var(--panel-2)}
+.alert{border-radius:10px;border:1px solid var(--border)}
+.alert-light{background:var(--panel-2);color:var(--muted);border-color:var(--border)}
+.badge.bg-dark{background:var(--panel-2)!important;color:var(--text)!important;border:1px solid var(--border)}
+.badge.bg-secondary{background:var(--panel-2)!important;color:var(--muted)!important;border:1px solid var(--border)}
+.nav-pills .nav-link{border-radius:8px;color:var(--muted)}
+.nav-pills .nav-link.active{background:var(--panel-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border)}
+.dropdown-menu{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:.4rem}
+.dropdown-item{border-radius:6px;color:var(--text);font-size:.9rem}.dropdown-item:hover{background:var(--panel-2);color:var(--text)}
 .ltr{direction:ltr;text-align:left}
-.code{font-family:ui-monospace,Consolas,monospace;font-size:.9rem}
-.step-num{width:28px;height:28px;border-radius:50%;background:#eef0ff;color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
-.diff{background:#1e1e2e;color:#cdd6f4;white-space:pre-wrap;overflow:auto;max-height:50vh}
+.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88rem}
+textarea.code{background:var(--bg)}
+details>summary{cursor:pointer;color:var(--muted)}
+/* סרגל עליון */
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.topbar .inner{height:56px}
+.brand-mark{width:56px;height:56px;border-radius:14px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;margin:0 auto 14px}
+.brand-sm{width:28px;height:28px;font-size:12px;border-radius:7px;margin:0}
+.topnav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:.35rem .7rem;border-radius:6px}
+.topnav a:hover,.topnav a.on{color:var(--text);background:var(--panel-2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.8rem;flex:none}
+/* רשימת שרתים בסגנון Render */
+.srv-list{border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow:hidden}
+.srv{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.9rem 1.1rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.srv:last-child{border-bottom:0}
+.srv:hover{background:var(--panel-2)}
+.srv-name{font-weight:600;color:var(--text);text-decoration:none;font-size:1rem}
+.srv-name:hover{color:var(--brand)}
+.srv-meta{color:var(--muted);font-size:.82rem;display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;margin-top:.25rem}
+.srv-meta a{color:var(--muted);text-decoration:none}.srv-meta a:hover{color:var(--brand);text-decoration:underline}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.dot-ok{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.dot-warn{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
+.dot-bad{background:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 22%,transparent)}
+.chip{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;color:var(--muted);background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:.08rem .5rem}
+.srv-actions{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.srv-actions form{margin:0}
+.empty{border:1px dashed var(--border);border-radius:10px;padding:2rem;text-align:center;color:var(--muted)}
+#deploy,.scroll-target{scroll-margin-top:76px}
+.diff{background:#14151c;color:#cdd6f4;white-space:pre-wrap;overflow:auto;max-height:50vh;border:1px solid var(--border)}
 .diff span{display:block}
 .d-add{background:rgba(46,160,67,.28)}.d-del{background:rgba(248,81,73,.28)}.d-hunk{color:#89b4fa}
-.url-chip{background:#f1f2fa;border-radius:8px;padding:2px 8px;font-size:.85rem;word-break:break-all}
+.url-chip{background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:.85rem;word-break:break-all;color:var(--text)}
+.log-row.s-err td{color:var(--bad)!important}
+/* טבלת שרתים בסגנון Render */
+.tbl{border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow:hidden}
+.srv-row{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1fr) 40px;align-items:center;gap:1rem;padding:.8rem 1.1rem}
+.tbl-head{color:var(--muted);font-size:.78rem;font-weight:500;border-bottom:1px solid var(--border);padding-top:.6rem;padding-bottom:.6rem;background:var(--panel)}
+.tbl .srv{border-bottom:1px solid var(--border);font-size:.9rem}
+.tbl .srv:last-child{border-bottom:0}
+.tbl .srv:hover{background:var(--panel-2)}
+.svc-ico{width:34px;height:34px;border-radius:8px;background:color-mix(in srgb,var(--brand) 18%,var(--panel-2));border:1px solid var(--border);color:var(--brand);font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.svc-ico-lg{width:44px;height:44px;border-radius:10px;font-size:.95rem}
+.srv-url{color:var(--muted);font-size:.78rem}
+.kebab{background:transparent;border:1px solid transparent;color:var(--muted);border-radius:6px;width:32px;height:32px;font-size:1.2rem;line-height:1}
+.kebab:hover,.kebab[aria-expanded=true]{background:var(--panel-2);border-color:var(--border);color:var(--text)}
+.crumbs{font-size:.85rem;color:var(--muted)}.crumbs a{color:var(--muted);text-decoration:none}.crumbs a:hover{color:var(--text)}
+/* עמוד שרת: סרגל צד */
+.svc-layout{display:grid;grid-template-columns:200px minmax(0,1fr);gap:2rem;border-top:1px solid var(--border);padding-top:1.5rem}
+.svc-nav{display:flex;flex-direction:column;gap:2px;position:sticky;top:76px;align-self:start}
+.svc-nav-title{font-size:.72rem;color:var(--muted);font-weight:600;padding:.2rem .7rem;margin-bottom:.2rem}
+.svc-nav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:.42rem .7rem;border-radius:6px}
+.svc-nav a:hover{background:var(--panel-2);color:var(--text)}
+.svc-nav a.on{background:var(--panel-2);color:var(--text);font-weight:600}
+@media (max-width:820px){
+  .srv-row{grid-template-columns:minmax(0,1fr) auto 40px}.c-runtime,.c-upd,.tbl-head{display:none}
+  .svc-layout{grid-template-columns:1fr;gap:1rem}
+  .svc-nav{flex-direction:row;overflow-x:auto;position:static;border-bottom:1px solid var(--border);padding-bottom:.5rem}.svc-nav-title{display:none}
+}
+
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </style>
 </head>
 <body>
 {% if current_user %}
-<header class="topbar mb-4"><div class="container py-2 d-flex justify-content-between align-items-center" style="max-width:1080px">
-  <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold">
-    <span class="brand-mark brand-sm">SH</span>מערכת שרתים
-  </a>
+<header class="topbar mb-4"><div class="container inner d-flex justify-content-between align-items-center" style="max-width:1180px">
   <div class="d-flex align-items-center gap-3">
-    <span class="text-muted small d-none d-sm-inline">{{ current_user.username }}{% if current_user.is_admin %} <span class="badge bg-primary">מנהל</span>{% endif %}</span>
-    <form method="post" action="{{ url_for('logout') }}" class="m-0">__CSRF__<button class="btn btn-outline-secondary btn-sm">התנתק</button></form>
+    <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none fw-bold" style="color:var(--text)">
+      <span class="brand-mark brand-sm">SH</span><span class="d-none d-sm-inline">מערכת שרתים</span>
+    </a>
+    <nav class="topnav d-flex gap-1">
+      <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs') %}on{% endif %}">שרתים</a>
+      <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}">הגדרות חשבון</a>
+    </nav>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <div class="dropdown">
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="dropdown" aria-expanded="false">חדש +</button>
+      <ul class="dropdown-menu dropdown-menu-end" style="min-width:230px">
+        <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=paste">שרת מקוד שהודבק</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=repo">ריפו שלם מ-GitHub</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=github">קובץ בודד מ-GitHub</a></li>
+      </ul>
+    </div>
+    <div class="dropdown">
+      <button type="button" class="avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="תפריט משתמש">{{ current_user.username[:1]|upper }}</button>
+      <ul class="dropdown-menu dropdown-menu-end" style="min-width:210px">
+        <li class="px-2 py-1"><div class="fw-semibold ltr">{{ current_user.username }}</div><div class="small text-muted">{% if current_user.is_admin %}מנהל{% else %}משתמש{% endif %}</div></li>
+        <li><hr class="dropdown-divider" style="border-color:var(--border)"></li>
+        <li><a class="dropdown-item" href="{{ url_for('account') }}">הגדרות חשבון</a></li>
+        <li><button type="button" class="dropdown-item js-theme">מצב בהיר / כהה</button></li>
+        <li><form method="post" action="{{ url_for('logout') }}" class="m-0">__CSRF__<button class="dropdown-item">התנתק</button></form></li>
+      </ul>
+    </div>
   </div>
 </div></header>
 {% endif %}
-<main class="container pb-5" style="max-width:1080px">
+<main class="container pb-5" style="max-width:1180px">
 {% with messages = get_flashed_messages(with_categories=true) %}{% for cat, msg in messages %}
 <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="סגור"></button></div>
 {% endfor %}{% endwith %}
@@ -54,6 +147,10 @@ body{font-family:'Heebo',system-ui,sans-serif;background:#f4f5fb;color:#1f2430}
 <script>
 document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){
   if(!confirm(f.dataset.confirm)){e.preventDefault();e.stopImmediatePropagation();}
+});});
+document.querySelectorAll('.js-theme').forEach(function(b){b.addEventListener('click',function(){
+  var r=document.documentElement,n=r.getAttribute('data-bs-theme')==='dark'?'light':'dark';
+  r.setAttribute('data-bs-theme',n);try{localStorage.setItem('sh-theme',n);}catch(e){}
 });});
 document.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',function(){
   var b=f.querySelector('button.js-load'); if(b){b.disabled=true;b.textContent='רגע...';}
@@ -134,7 +231,7 @@ ERROR = """{% extends 'base.html' %}
 {% block content %}
 <div class="d-flex justify-content-center pt-5">
   <div class="card p-5 text-center" style="max-width:480px">
-    <div class="brand-mark" style="background:#dc3545">!</div>
+    <div class="brand-mark" style="background:var(--bad)">!</div>
     <h4 class="mb-2">משהו השתבש</h4>
     <p class="text-muted">{{ message }}</p>
     <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">חזרה לדף הבית</a>
@@ -143,15 +240,10 @@ ERROR = """{% extends 'base.html' %}
 {% endblock %}"""
 
 DASHBOARD = """{% extends 'base.html' %}
-{% block title %}לוח בקרה{% endblock %}
+{% block title %}שרתים{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <h3 class="mb-0">שלום, {{ current_user.username }}</h3>
-  <div class="text-muted">כאן פורסים שרתים חדשים ומנהלים את הקיימים.</div>
-</div>
-
 {% if current_user.is_admin %}
-<div class="card p-4 mb-4 border-start border-4 border-warning">
+<div class="card p-4 mb-4" style="border-inline-start:3px solid var(--warn)">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
     <h5 class="mb-0">ממתינים לאישור <span class="badge bg-warning text-dark">{{ pending|length }}</span></h5>
     <span class="text-muted small">{{ users_count }} משתמשים · {{ active_count }} שרתים פעילים</span>
@@ -167,213 +259,81 @@ DASHBOARD = """{% extends 'base.html' %}
 </div>
 {% endif %}
 
-<div class="row g-4 mb-4">
-  <div class="col-lg-7">
-    <div class="card p-4 h-100">
-      <h5 class="mb-3">פריסת שרת חדש</h5>
-      <form method="post" action="{{ url_for('deploy_server') }}">
-        __CSRF__
-        <div class="btn-group w-100 mb-3" role="group">
-          <input type="radio" class="btn-check" name="source_mode" id="mode_paste" value="paste" checked>
-          <label class="btn btn-outline-primary" for="mode_paste">הדבקת קוד</label>
-          <input type="radio" class="btn-check" name="source_mode" id="mode_github" value="github">
-          <label class="btn btn-outline-primary" for="mode_github">קובץ מ-GitHub</label>
-          <input type="radio" class="btn-check" name="source_mode" id="mode_repo" value="repo">
-          <label class="btn btn-outline-primary" for="mode_repo">ריפו שלם מ-GitHub</label>
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-sm-6">
-            <label class="form-label">שם הנתיב</label>
-            <input type="text" name="route_name" class="form-control ltr" placeholder="hello" required data-lower pattern="[a-z0-9][a-z0-9_]{0,39}" title="אותיות אנגליות קטנות, ספרות או _ (עד 40 תווים)" autocapitalize="none">
-            <div class="form-text">הכתובת: <span class="ltr d-inline-block">/{{ current_user.username }}/<b id="rnPreview">...</b></span></div>
-          </div>
-          <div class="col-sm-6 paste-only">
-            <label class="form-label">שפת הקוד שהדבקת</label>
-            <input type="text" name="source_lang" id="lang" list="langs" class="form-control ltr" value="Python" required maxlength="30">
-            <datalist id="langs"><option value="Python"><option value="PHP"><option value="JavaScript"><option value="Node.js"><option value="Java"><option value="C#"><option value="Go"><option value="Ruby"></datalist>
-          </div>
-        </div>
-
-        <div class="gh-any d-none">
-          <label class="form-label">כתובת הריפו או הקובץ ב-GitHub</label>
-          <input type="text" name="github_url" id="github_url" class="form-control ltr mb-1" placeholder="https://github.com/user/repo">
-          <div class="form-text mb-3 gh-file-only">אפשר להדביק קישור ישיר לקובץ (…/blob/main/app.py), או רק את הריפו ולמלא נתיב.</div>
-          <div class="form-text mb-3 repo-only">אפשר להדביק גם קישור לתיקייה בתוך הריפו (…/tree/main/server).</div>
-          <div class="row g-3 mb-3">
-            <div class="col-sm-4 gh-file-only"><label class="form-label">נתיב הקובץ (אם לא בקישור)</label><input type="text" name="github_path" class="form-control ltr" placeholder="app.py"></div>
-            <div class="col-sm-4 repo-only"><label class="form-label">תיקייה בריפו (אופציונלי)</label><input type="text" name="github_subdir" class="form-control ltr" placeholder="server"></div>
-            <div class="col-sm-4 repo-only"><label class="form-label">קובץ ראשי (אופציונלי)</label><input type="text" name="github_entry" class="form-control ltr" placeholder="app.py"></div>
-            <div class="col-sm-4"><label class="form-label">ענף (אופציונלי)</label><input type="text" name="github_ref" class="form-control ltr" placeholder="main"></div>
-          </div>
-          <div class="form-text mb-3">
-            {% if 'github' in saved_providers %}GitHub מחובר, ואפשר לייבא גם מריפו פרטי.{% else %}ריפו ציבורי לא דורש חיבור. לריפו פרטי חבר טוקן בכרטיס "חיבור GitHub".{% endif %}
-            <span class="gh-file-only">מיובא קובץ אחד. קובץ py נשלח ישירות, וסוגי קבצים אחרים מתורגמים ב-AI.</span>
-            <span class="repo-only">הריפו כולו (קבצי טקסט, עד 100 קבצים ו-1.5MB) נשמר כשרת אחד. בלי AI.</span>
-          </div>
-        </div>
-
-        <div id="pyBox" class="form-check mb-3 d-none">
-          <input class="form-check-input" type="checkbox" name="force_ai" value="1" id="force_ai">
-          <label class="form-check-label" for="force_ai">לתרגם גם את קוד ה-Python דרך AI (לסקריפט שאינו אפליקציית Flask)</label>
-        </div>
-        <div id="aiBox" class="mb-3 d-none">
-          <label class="form-label">ספק AI לתרגום</label>
-          <select name="provider" class="form-select">
-            {% for key, label in providers.items() %}
-            <option value="{{ key }}">{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div id="modeHint" class="alert alert-light border small"></div>
-
-        <div class="paste-only">
-          <label class="form-label">הקוד</label>
-          <textarea name="code" id="code" class="form-control ltr code" rows="10" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
-          <div id="codeCount" class="form-text mb-3 text-end"></div>
-        </div>
-        <button type="submit" class="btn btn-primary px-4 js-load">שלח לפריסה</button>
-      </form>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h4 class="mb-0 fw-semibold">שרתים</h4>
+  <a href="{{ url_for('new_server') }}" class="btn btn-primary btn-sm">שרת חדש +</a>
+</div>
+<div class="d-flex gap-2 flex-wrap mb-3">
+  <input type="search" id="srvSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש שרתים...">
+  <select id="srvFilter" class="form-select form-select-sm" style="width:auto">
+    <option value="">כל הסטטוסים</option><option value="active">פעיל</option><option value="pending">ממתין לאישור</option><option value="rejected">נדחה</option>
+  </select>
+  <span class="text-muted small align-self-center ms-auto">{{ routes|length }} שרתים</span>
+</div>
+{% if routes %}
+<div class="tbl mb-5" id="srvList">
+  <div class="tbl-head srv-row"><div>שם</div><div>סטטוס</div><div class="c-runtime">סביבת הרצה</div><div class="c-upd">עודכן</div><div></div></div>
+  {% for route in routes %}
+  {% set url = request.host_url.rstrip('/') ~ route.full_path %}
+  {% set is_bundle = (route.live_code or route.pending_code or '').startswith('{"bundle"') %}
+  <div class="srv-row srv position-relative" data-name="{{ route.route_name }} {{ route.full_path }}" data-status="{{ route.status }}">
+    <div class="d-flex align-items-center gap-3" style="min-width:0">
+      <span class="svc-ico">Py</span>
+      <div style="min-width:0">
+        {% if route.live_code or route.pending_code %}<a href="{{ url_for('edit_route', route_id=route.id) }}" class="srv-name stretched-link">{{ route.route_name }}</a>{% else %}<span class="srv-name">{{ route.route_name }}</span>{% endif %}
+        <div class="srv-url ltr text-truncate">{{ route.full_path }}</div>
+      </div>
     </div>
-  </div>
-
-  <div class="col-lg-5">
-    <div class="card p-4 mb-4">
-      <h5 class="mb-1">מפתחות API</h5>
-      <div class="text-muted small mb-3">נדרשים רק לתרגום קוד משפות שאינן Python. נשמרים מוצפנים.</div>
-      {% for key, label in providers.items() %}
-      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-        <span>{{ label }}</span>
-        {% if key in saved_providers %}
-        <form method="post" action="{{ url_for('update_key') }}" class="m-0 d-flex align-items-center gap-2">
-          __CSRF__
-          <input type="hidden" name="provider" value="{{ key }}">
-          <span class="badge bg-success">שמור</span>
-          <button name="action" value="delete" class="btn btn-sm btn-outline-danger">מחק</button>
-        </form>
-        {% else %}
-        <span class="badge bg-secondary">לא הוגדר</span>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
+      <span>{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}ממתין לאישור{% endif %}</span>
+      {% if route.status == 'active' and route.pending_code %}<span class="chip" style="color:var(--warn)">עדכון ממתין</span>{% endif %}
+    </div>
+    <div class="c-runtime text-muted">Python 3{% if route.source %} · GitHub{% endif %}{% if is_bundle %} · כמה קבצים{% endif %}</div>
+    <div class="c-upd text-muted">{{ route.updated_at|timeago }}</div>
+    <div class="dropdown position-relative" style="z-index:3">
+      <button type="button" class="kebab" data-bs-toggle="dropdown" aria-expanded="false" aria-label="פעולות">&#8943;</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        {% if route.status == 'active' %}
+        <li><a class="dropdown-item" href="{{ route.full_path }}" target="_blank" rel="noopener">פתח את השרת</a></li>
+        <li><button type="button" class="dropdown-item js-copy" data-url="{{ url }}">העתק כתובת</button></li>
         {% endif %}
-      </div>
-      {% endfor %}
-      <form method="post" action="{{ url_for('update_key') }}" class="mt-3">
-        __CSRF__
-        <label class="form-label small">הוספה או החלפה של מפתח</label>
-        <select name="provider" class="form-select mb-2">
-          {% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
-        </select>
-        <input type="password" name="api_key" class="form-control ltr mb-2" placeholder="הדבק מפתח" autocomplete="off" required>
-        <button name="action" value="save" class="btn btn-outline-primary w-100">שמור מפתח</button>
-      </form>
-    </div>
-
-    <div class="card p-4">
-      <h5 class="mb-1">חיבור GitHub</h5>
-      <div class="text-muted small mb-3">לייבוא קוד מריפו פרטי. ריפו ציבורי לא דורש חיבור.</div>
-      {% if 'github' in saved_providers %}
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="badge bg-success">מחובר</span>
-        <form method="post" action="{{ url_for('update_github') }}" class="m-0" data-confirm="לנתק את החיבור ל-GitHub?">
-          __CSRF__<button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק</button>
-        </form>
-      </div>
-      {% else %}
-      <form method="post" action="{{ url_for('update_github') }}">
-        __CSRF__
-        <input type="password" name="token" class="form-control ltr mb-2" placeholder="github_pat_..." autocomplete="off" required>
-        <button name="action" value="save" class="btn btn-outline-primary w-100">חבר GitHub</button>
-      </form>
-      <details class="mt-3 small text-muted">
-        <summary>איך יוצרים טוקן קריאה בלבד?</summary>
-        <ol class="ps-3 mb-0 mt-2">
-          <li>ב-GitHub: Settings, Developer settings, Personal access tokens, Fine-grained tokens.</li>
-          <li>Generate new token. ב-Repository access בחר רק את הריפו שצריך.</li>
-          <li>ב-Repository permissions הגדר Contents: Read-only.</li>
-          <li>העתק את הטוקן והדבק כאן. הוא נשמר מוצפן ומשמש לקריאה בלבד.</li>
-        </ol>
-      </details>
-      {% endif %}
+        {% if route.live_code or route.pending_code %}<li><a class="dropdown-item" href="{{ url_for('edit_route', route_id=route.id) }}">ערוך קוד</a></li>{% endif %}
+        <li><a class="dropdown-item" href="{{ url_for('view_logs', route_id=route.id) }}">יומנים</a></li>
+        <li><hr class="dropdown-divider" style="border-color:var(--border)"></li>
+        <li><form method="post" action="{{ url_for('delete_route', route_id=route.id) }}" data-confirm="למחוק את השרת {{ route.full_path }} לצמיתות? אי אפשר לשחזר.">__CSRF__<button class="dropdown-item" style="color:var(--bad)">מחק שרת</button></form></li>
+      </ul>
     </div>
   </div>
+  {% endfor %}
 </div>
-
-<div class="card p-4">
-  <h5 class="mb-3">השרתים שלך</h5>
-  {% if routes %}
-  <div class="table-responsive">
-    <table class="table align-middle mb-0">
-      <thead><tr><th>כתובת</th><th>סטטוס</th><th></th></tr></thead>
-      <tbody>
-      {% for route in routes %}
-      <tr>
-        <td><span class="url-chip ltr d-inline-block">{{ request.host_url.rstrip('/') }}{{ route.full_path }}</span></td>
-        <td>
-          {% if route.status == 'active' %}<span class="badge bg-success">פעיל</span>
-          {% elif route.status == 'rejected' %}<span class="badge bg-danger">נדחה</span>
-          {% else %}<span class="badge bg-warning text-dark">ממתין לאישור</span>{% endif %}
-          {% if route.status == 'active' and route.pending_code %}<span class="badge bg-warning text-dark">עדכון ממתין</span>{% endif %}
-          {% if route.source %}<span class="badge bg-dark">GitHub</span>{% endif %}
-          {% if (route.live_code or route.pending_code or '').startswith('{"bundle"') %}<span class="badge bg-info text-dark">כמה קבצים</span>{% endif %}
-        </td>
-        <td class="text-end text-nowrap">
-          {% if route.status == 'active' %}
-          <button type="button" class="btn btn-sm btn-outline-secondary js-copy" data-url="{{ request.host_url.rstrip('/') }}{{ route.full_path }}">העתק</button>
-          <a href="{{ route.full_path }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">פתח</a>
-          {% endif %}
-          {% if route.live_code or route.pending_code %}<a href="{{ url_for('edit_route', route_id=route.id) }}" class="btn btn-sm btn-primary">ערוך קוד</a>{% endif %}
-          <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">יומנים</a>
-          <form method="post" action="{{ url_for('delete_route', route_id=route.id) }}" class="d-inline" data-confirm="למחוק את השרת {{ route.full_path }} לצמיתות? אי אפשר לשחזר.">__CSRF__<button class="btn btn-sm btn-outline-danger">מחק</button></form>
-        </td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="text-muted mb-3">עוד אין לך שרתים. כך זה עובד:</div>
-  <div class="d-flex flex-column gap-2">
-    <div class="d-flex gap-2 align-items-center"><span class="step-num">1</span>בוחרים שם נתיב ומדביקים קוד (או מייבאים קובץ מ-GitHub) בטופס למעלה.</div>
-    <div class="d-flex gap-2 align-items-center"><span class="step-num">2</span>מנהל קורא את הקוד ומאשר אותו.</div>
-    <div class="d-flex gap-2 align-items-center"><span class="step-num">3</span>השרת עולה בכתובת שמופיעה כאן, ואפשר להעתיק אותה בלחיצה.</div>
-  </div>
-  {% endif %}
+<div id="srvNone" class="empty mb-5 d-none">לא נמצאו שרתים שמתאימים לחיפוש.</div>
+{% else %}
+<div class="empty mb-5">
+  <div class="fw-semibold mb-1" style="color:var(--text);font-size:1.1rem">עוד אין לך שרתים</div>
+  <div class="mb-3">מדביקים קוד או מייבאים ריפו מ-GitHub, ומקבלים כתובת באינטרנט.</div>
+  <a href="{{ url_for('new_server') }}" class="btn btn-primary">שרת חדש +</a>
 </div>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
 (function(){
-  var PY=['python','py','python3','flask'];
   function $(id){return document.getElementById(id);}
-  var lang=$('lang'), aiBox=$('aiBox'), pyBox=$('pyBox'), force=$('force_ai'), hint=$('modeHint');
-  var code=$('code'), cnt=$('codeCount'), ghUrl=$('github_url');
-  function mode(){return document.querySelector('input[name=source_mode]:checked').value;}
-  function isPy(){return PY.indexOf(lang.value.trim().toLowerCase())>-1;}
-  function show(sel,on){document.querySelectorAll(sel).forEach(function(e){e.classList.toggle('d-none',!on);});}
-  function upd(){
-    var m=mode(), gh=m!=='paste', repo=m==='repo', file=m==='github';
-    show('.paste-only',!gh); show('.gh-any',gh); show('.gh-file-only',file); show('.repo-only',repo);
-    code.required=!gh; lang.required=!gh; ghUrl.required=gh;
-    pyBox.classList.toggle('d-none',gh||!isPy());
-    var useAi=file||(!gh&&(!isPy()||force.checked));
-    aiBox.classList.toggle('d-none',!useAi);
-    hint.textContent=repo
-      ? 'הריפו (או התיקייה) מורד כ-ZIP. הקובץ הראשי חייב להגדיר app (Flask) או bp (Blueprint), והקבצים יכולים לייבא זה את זה, להשתמש ב-templates וב-static. ספריות חיצוניות מותקנות אוטומטית רק אם הן ברשימת ההיתר.'
-      : file
-      ? 'הקובץ נמשך מ-GitHub. קובץ py נשלח ישירות לבדיקה, בלי AI. סוגי קבצים אחרים יתורגמו ב-AI של הספק שבחרת (נדרש מפתח שמור).'
-      : (useAi ? 'הקוד יתורגם ל-Flask על ידי ספק ה-AI שבחרת (נדרש מפתח API שמור).'
-               : 'קוד Python נשלח ישירות לבדיקה, בלי AI. אפשר להדביק אפליקציית Flask רגילה (app = Flask(__name__)) בלי שינוי.');
-    var max=parseInt(useAi?code.dataset.maxAi:code.dataset.maxDirect,10), n=code.value.length;
-    cnt.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים'+(useAi?' (תרגום ב-AI)':' (Python ישיר)');
-    cnt.classList.toggle('text-danger',n>max);
-  }
-  document.querySelectorAll('input[name=source_mode]').forEach(function(r){r.addEventListener('change',upd);});
-  lang.addEventListener('input',upd); force.addEventListener('change',upd); code.addEventListener('input',upd); upd();
-  var rn=document.querySelector('[name=route_name]'), pv=$('rnPreview');
-  rn.addEventListener('input',function(){pv.textContent=rn.value||'...';});
-  document.querySelectorAll('[data-lower]').forEach(function(i){i.addEventListener('input',function(){i.value=i.value.toLowerCase();});});
   document.querySelectorAll('.js-copy').forEach(function(b){b.addEventListener('click',function(){
     navigator.clipboard.writeText(b.dataset.url).then(function(){var t=b.textContent;b.textContent='הועתק';setTimeout(function(){b.textContent=t;},1500);});
   });});
+  var q=$('srvSearch'), f=$('srvFilter');
+  function filt(){
+    if(!q) return;
+    var t=q.value.trim().toLowerCase(), st=f.value, shown=0;
+    document.querySelectorAll('#srvList .srv').forEach(function(r){
+      var ok=(!t||r.dataset.name.toLowerCase().indexOf(t)>-1)&&(!st||r.dataset.status===st);
+      r.classList.toggle('d-none',!ok); if(ok) shown++;
+    });
+    var none=$('srvNone'); if(none) none.classList.toggle('d-none',shown>0);
+  }
+  if(q){q.addEventListener('input',filt); f.addEventListener('change',filt);}
 })();
 </script>
 {% endblock %}"""
@@ -440,36 +400,51 @@ REVIEW = """{% extends 'base.html' %}
 </div>
 {% endblock %}"""
 
-LOGS = """{% extends 'base.html' %}
+LOGS = """{% extends 'service.html' %}
 {% block title %}יומנים{% endblock %}
-{% block content %}
-<a href="{{ url_for('index') }}" class="text-decoration-none">&rarr; חזרה ללוח הבקרה</a>
-<h3 class="mt-2 mb-3">יומנים: <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span></h3>
+{% block service_content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h5 class="fw-semibold mb-0">יומנים</h5>
+  <div class="d-flex align-items-center gap-3">
+    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label small text-muted" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
+    <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
+  </div>
+</div>
 <div class="card p-3">
   {% if logs %}
-  <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+  <div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0">
     <thead><tr><th>זמן (UTC)</th><th>פרטים</th></tr></thead>
     <tbody>
     {% for log in logs %}
-      <tr><td class="text-nowrap ltr">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td><td class="text-muted ltr">{{ log.message }}</td></tr>
+      <tr class="log-row{% if 'Status: 5' in log.message %} s-err{% endif %}"><td class="text-nowrap ltr">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td><td class="text-muted ltr code">{{ log.message }}</td></tr>
     {% endfor %}
     </tbody>
   </table></div>
+  <div class="small text-muted pt-2">מוצגות {{ logs|length }} הבקשות האחרונות.</div>
   {% else %}
   <div class="text-center text-muted py-4">עוד לא הגיעו בקשות לשרת הזה.</div>
   {% endif %}
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var cb=document.getElementById('autoRefresh'), t=null;
+  try{cb.checked=sessionStorage.getItem('sh-auto-logs')==='1';}catch(e){}
+  function apply(){
+    try{sessionStorage.setItem('sh-auto-logs',cb.checked?'1':'0');}catch(e){}
+    if(t){clearInterval(t);t=null;}
+    if(cb.checked){t=setInterval(function(){location.reload();},5000);}
+  }
+  cb.addEventListener('change',apply); apply();
+})();
+</script>
 {% endblock %}"""
 
-EDIT = """{% extends 'base.html' %}
+EDIT = """{% extends 'service.html' %}
 {% block title %}עריכת שרת{% endblock %}
-{% block content %}
-<a href="{{ url_for('index') }}" class="text-decoration-none">&rarr; חזרה ללוח הבקרה</a>
-<h3 class="mt-2">עריכת שרת</h3>
-<div class="mb-3">
-  <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span>
-  {% if route.status == 'active' %}<span class="badge bg-success">פעיל</span>{% else %}<span class="badge bg-warning text-dark">ממתין לאישור</span>{% endif %}
-</div>
+{% block service_content %}
+<h5 class="fw-semibold mb-3">קוד</h5>
 {% if route.pending_code and route.live_code %}
 <div class="alert alert-warning">יש כבר גרסה חדשה שממתינה לאישור. העריכה ממשיכה ממנה, והגרסה הפעילה ממשיכה לרוץ בינתיים.</div>
 {% endif %}
@@ -558,7 +533,7 @@ EDIT = """{% extends 'base.html' %}
 <script type="application/json" id="bundleData">{{ bundle|tojson }}</script>
 {% endif %}
 
-<div class="card p-3 mt-4">
+<div class="card p-3 mt-4 scroll-target" id="env">
   <h6 class="mb-1">משתני סביבה</h6>
   <div class="text-muted small mb-3">
     לסודות כמו מפתחות API. נשמרים מוצפנים ולא מוצגים אחרי השמירה. בקוד קוראים אותם כך:
@@ -628,12 +603,223 @@ EDIT = """{% extends 'base.html' %}
 {% endif %}
 {% endblock %}"""
 
+NEW = """{% extends 'base.html' %}
+{% block title %}שרת חדש{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width:780px">
+  <div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span>שרת חדש</span></div>
+  <h4 class="fw-semibold mb-1">שרת חדש</h4>
+  <div class="text-muted mb-4">מדביקים קוד Python או מייבאים מ-GitHub. מנהל מאשר, והשרת עולה בכתובת משלו.</div>
+<div class="card p-4">
+      <h5 class="mb-3">שרת חדש</h5>
+      <form method="post" action="{{ url_for('deploy_server') }}">
+        __CSRF__
+        <div class="btn-group w-100 mb-3" role="group">
+          <input type="radio" class="btn-check" name="source_mode" id="mode_paste" value="paste" checked>
+          <label class="btn btn-outline-primary" for="mode_paste">הדבקת קוד</label>
+          <input type="radio" class="btn-check" name="source_mode" id="mode_github" value="github">
+          <label class="btn btn-outline-primary" for="mode_github">קובץ מ-GitHub</label>
+          <input type="radio" class="btn-check" name="source_mode" id="mode_repo" value="repo">
+          <label class="btn btn-outline-primary" for="mode_repo">ריפו שלם מ-GitHub</label>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label">שם הנתיב</label>
+            <input type="text" name="route_name" class="form-control ltr" placeholder="hello" required data-lower pattern="[a-z0-9][a-z0-9_]{0,39}" title="אותיות אנגליות קטנות, ספרות או _ (עד 40 תווים)" autocapitalize="none">
+            <div class="form-text">הכתובת: <span class="ltr d-inline-block">/{{ current_user.username }}/<b id="rnPreview">...</b></span></div>
+          </div>
+          <div class="col-sm-6 paste-only">
+            <label class="form-label">שפת הקוד שהדבקת</label>
+            <input type="text" name="source_lang" id="lang" list="langs" class="form-control ltr" value="Python" required maxlength="30">
+            <datalist id="langs"><option value="Python"><option value="PHP"><option value="JavaScript"><option value="Node.js"><option value="Java"><option value="C#"><option value="Go"><option value="Ruby"></datalist>
+          </div>
+        </div>
+
+        <div class="gh-any d-none">
+          <label class="form-label">כתובת הריפו או הקובץ ב-GitHub</label>
+          <input type="text" name="github_url" id="github_url" class="form-control ltr mb-1" placeholder="https://github.com/user/repo">
+          <div class="form-text mb-3 gh-file-only">אפשר להדביק קישור ישיר לקובץ (…/blob/main/app.py), או רק את הריפו ולמלא נתיב.</div>
+          <div class="form-text mb-3 repo-only">אפשר להדביק גם קישור לתיקייה בתוך הריפו (…/tree/main/server).</div>
+          <div class="row g-3 mb-3">
+            <div class="col-sm-4 gh-file-only"><label class="form-label">נתיב הקובץ (אם לא בקישור)</label><input type="text" name="github_path" class="form-control ltr" placeholder="app.py"></div>
+            <div class="col-sm-4 repo-only"><label class="form-label">תיקייה בריפו (אופציונלי)</label><input type="text" name="github_subdir" class="form-control ltr" placeholder="server"></div>
+            <div class="col-sm-4 repo-only"><label class="form-label">קובץ ראשי (אופציונלי)</label><input type="text" name="github_entry" class="form-control ltr" placeholder="app.py"></div>
+            <div class="col-sm-4"><label class="form-label">ענף (אופציונלי)</label><input type="text" name="github_ref" class="form-control ltr" placeholder="main"></div>
+          </div>
+          <div class="form-text mb-3">
+            {% if 'github' in saved_providers %}GitHub מחובר, ואפשר לייבא גם מריפו פרטי.{% else %}ריפו ציבורי לא דורש חיבור. לריפו פרטי חבר טוקן בכרטיס "חיבור GitHub".{% endif %}
+            <span class="gh-file-only">מיובא קובץ אחד. קובץ py נשלח ישירות, וסוגי קבצים אחרים מתורגמים ב-AI.</span>
+            <span class="repo-only">הריפו כולו (קבצי טקסט, עד 100 קבצים ו-1.5MB) נשמר כשרת אחד. בלי AI.</span>
+          </div>
+        </div>
+
+        <div id="pyBox" class="form-check mb-3 d-none">
+          <input class="form-check-input" type="checkbox" name="force_ai" value="1" id="force_ai">
+          <label class="form-check-label" for="force_ai">לתרגם גם את קוד ה-Python דרך AI (לסקריפט שאינו אפליקציית Flask)</label>
+        </div>
+        <div id="aiBox" class="mb-3 d-none">
+          <label class="form-label">ספק AI לתרגום</label>
+          <select name="provider" class="form-select">
+            {% for key, label in providers.items() %}
+            <option value="{{ key }}">{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="modeHint" class="alert alert-light border small"></div>
+
+        <div class="paste-only">
+          <label class="form-label">הקוד</label>
+          <textarea name="code" id="code" class="form-control ltr code" rows="10" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
+          <div id="codeCount" class="form-text mb-3 text-end"></div>
+        </div>
+        <button type="submit" class="btn btn-primary px-4 js-load">שלח לפריסה</button>
+      </form>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var PY=['python','py','python3','flask'];
+  function $(id){return document.getElementById(id);}
+  var lang=$('lang'), aiBox=$('aiBox'), pyBox=$('pyBox'), force=$('force_ai'), hint=$('modeHint');
+  var code=$('code'), cnt=$('codeCount'), ghUrl=$('github_url');
+  function mode(){return document.querySelector('input[name=source_mode]:checked').value;}
+  function isPy(){return PY.indexOf(lang.value.trim().toLowerCase())>-1;}
+  function show(sel,on){document.querySelectorAll(sel).forEach(function(e){e.classList.toggle('d-none',!on);});}
+  function upd(){
+    var m=mode(), gh=m!=='paste', repo=m==='repo', file=m==='github';
+    show('.paste-only',!gh); show('.gh-any',gh); show('.gh-file-only',file); show('.repo-only',repo);
+    code.required=!gh; lang.required=!gh; ghUrl.required=gh;
+    pyBox.classList.toggle('d-none',gh||!isPy());
+    var useAi=file||(!gh&&(!isPy()||force.checked));
+    aiBox.classList.toggle('d-none',!useAi);
+    hint.textContent=repo
+      ? 'הריפו (או התיקייה) מורד כ-ZIP. הקובץ הראשי חייב להגדיר app (Flask) או bp (Blueprint), והקבצים יכולים לייבא זה את זה, להשתמש ב-templates וב-static. ספריות חיצוניות מותקנות אוטומטית רק אם הן ברשימת ההיתר.'
+      : file
+      ? 'הקובץ נמשך מ-GitHub. קובץ py נשלח ישירות לבדיקה, בלי AI. סוגי קבצים אחרים יתורגמו ב-AI של הספק שבחרת (נדרש מפתח שמור).'
+      : (useAi ? 'הקוד יתורגם ל-Flask על ידי ספק ה-AI שבחרת (נדרש מפתח API שמור).'
+               : 'קוד Python נשלח ישירות לבדיקה, בלי AI. אפשר להדביק אפליקציית Flask רגילה (app = Flask(__name__)) בלי שינוי.');
+    var max=parseInt(useAi?code.dataset.maxAi:code.dataset.maxDirect,10), n=code.value.length;
+    cnt.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים'+(useAi?' (תרגום ב-AI)':' (Python ישיר)');
+    cnt.classList.toggle('text-danger',n>max);
+  }
+  document.querySelectorAll('input[name=source_mode]').forEach(function(r){r.addEventListener('change',upd);});
+  var qm=new URLSearchParams(location.search).get('mode'); if(qm){var qr=document.getElementById('mode_'+qm); if(qr){qr.checked=true;}}
+  lang.addEventListener('input',upd); force.addEventListener('change',upd); code.addEventListener('input',upd); upd();
+  var rn=document.querySelector('[name=route_name]'), pv=$('rnPreview');
+  rn.addEventListener('input',function(){pv.textContent=rn.value||'...';});
+  document.querySelectorAll('[data-lower]').forEach(function(i){i.addEventListener('input',function(){i.value=i.value.toLowerCase();});});
+})();
+</script>
+{% endblock %}"""
+
+ACCOUNT = """{% extends 'base.html' %}
+{% block title %}הגדרות חשבון{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width:780px">
+  <div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span>הגדרות חשבון</span></div>
+  <h4 class="fw-semibold mb-4">הגדרות חשבון</h4>
+  <div class="card p-4">
+      <h5 class="mb-1">חיבור GitHub</h5>
+      <div class="text-muted small mb-3">לייבוא קוד מריפו פרטי. ריפו ציבורי לא דורש חיבור.</div>
+      {% if 'github' in saved_providers %}
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="badge bg-success">מחובר</span>
+        <form method="post" action="{{ url_for('update_github') }}" class="m-0" data-confirm="לנתק את החיבור ל-GitHub?">
+          __CSRF__<button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק</button>
+        </form>
+      </div>
+      {% else %}
+      <form method="post" action="{{ url_for('update_github') }}">
+        __CSRF__
+        <input type="password" name="token" class="form-control ltr mb-2" placeholder="github_pat_..." autocomplete="off" required>
+        <button name="action" value="save" class="btn btn-outline-primary w-100">חבר GitHub</button>
+      </form>
+      <details class="mt-3 small text-muted">
+        <summary>איך יוצרים טוקן קריאה בלבד?</summary>
+        <ol class="ps-3 mb-0 mt-2">
+          <li>ב-GitHub: Settings, Developer settings, Personal access tokens, Fine-grained tokens.</li>
+          <li>Generate new token. ב-Repository access בחר רק את הריפו שצריך.</li>
+          <li>ב-Repository permissions הגדר Contents: Read-only.</li>
+          <li>העתק את הטוקן והדבק כאן. הוא נשמר מוצפן ומשמש לקריאה בלבד.</li>
+        </ol>
+      </details>
+      {% endif %}
+    </div>
+  <div class="mb-4"></div>
+  <div class="card p-4 mb-4">
+      <h5 class="mb-1">מפתחות API</h5>
+      <div class="text-muted small mb-3">נדרשים רק לתרגום קוד משפות שאינן Python. נשמרים מוצפנים.</div>
+      {% for key, label in providers.items() %}
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+        <span>{{ label }}</span>
+        {% if key in saved_providers %}
+        <form method="post" action="{{ url_for('update_key') }}" class="m-0 d-flex align-items-center gap-2">
+          __CSRF__
+          <input type="hidden" name="provider" value="{{ key }}">
+          <span class="badge bg-success">שמור</span>
+          <button name="action" value="delete" class="btn btn-sm btn-outline-danger">מחק</button>
+        </form>
+        {% else %}
+        <span class="badge bg-secondary">לא הוגדר</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <form method="post" action="{{ url_for('update_key') }}" class="mt-3">
+        __CSRF__
+        <label class="form-label small">הוספה או החלפה של מפתח</label>
+        <select name="provider" class="form-select mb-2">
+          {% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select>
+        <input type="password" name="api_key" class="form-control ltr mb-2" placeholder="הדבק מפתח" autocomplete="off" required>
+        <button name="action" value="save" class="btn btn-outline-primary w-100">שמור מפתח</button>
+      </form>
+  </div>
+</div>
+{% endblock %}"""
+
+SERVICE = """{% extends 'base.html' %}
+{% block content %}
+<div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span class="ltr d-inline-block">{{ route.route_name }}</span></div>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div class="d-flex align-items-center gap-3" style="min-width:0">
+    <span class="svc-ico svc-ico-lg">Py</span>
+    <div style="min-width:0">
+      <h4 class="mb-1 fw-semibold ltr">{{ route.route_name }}</h4>
+      <div class="d-flex gap-2 align-items-center flex-wrap small">
+        <span class="chip">Web Service</span><span class="chip">Python 3</span>
+        <span class="d-inline-flex align-items-center gap-1">
+          <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
+          {% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}ממתין לאישור{% endif %}
+        </span>
+        {% if route.status == 'active' %}<a href="{{ route.full_path }}" target="_blank" rel="noopener" class="ltr text-muted text-decoration-none">{{ request.host_url.rstrip('/') }}{{ route.full_path }}</a>{% else %}<span class="ltr text-muted">{{ route.full_path }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% if route.status == 'active' %}<a href="{{ route.full_path }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">פתח את השרת</a>{% endif %}
+</div>
+<div class="svc-layout">
+  <nav class="svc-nav">
+    <div class="svc-nav-title">ניהול</div>
+    <a href="{{ url_for('edit_route', route_id=route.id) }}" class="{% if request.endpoint == 'edit_route' %}on{% endif %}">קוד</a>
+    <a href="{{ url_for('edit_route', route_id=route.id) }}#env">משתני סביבה</a>
+    <a href="{{ url_for('view_logs', route_id=route.id) }}" class="{% if request.endpoint == 'view_logs' %}on{% endif %}">יומנים</a>
+  </nav>
+  <section class="svc-main">{% block service_content %}{% endblock %}</section>
+</div>
+{% endblock %}"""
+
 TEMPLATES = {
     "base.html": BASE,
     "edit.html": EDIT,
     "login.html": LOGIN,
     "error.html": ERROR,
     "dashboard.html": DASHBOARD,
+    "new.html": NEW,
+    "account.html": ACCOUNT,
+    "service.html": SERVICE,
     "review.html": REVIEW,
     "logs.html": LOGS,
 }
