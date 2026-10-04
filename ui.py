@@ -106,6 +106,49 @@ details>summary{cursor:pointer;color:var(--muted)}
 @media (max-width:576px){.hero h1{font-size:1.8rem}}
 .feat{height:100%}
 .feat .fi{width:36px;height:36px;border-radius:9px;background:color-mix(in srgb,var(--brand) 18%,var(--panel-2));border:1px solid var(--border);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:.7rem}
+/* דף פתיחה בסגנון Render */
+.lp{position:relative}
+.lp-glow{position:absolute;inset:-80px -50vw auto -50vw;height:620px;pointer-events:none;z-index:0;background:radial-gradient(60% 55% at 50% 0%,color-mix(in srgb,var(--brand) 38%,transparent),transparent 70%),radial-gradient(35% 40% at 85% 10%,color-mix(in srgb,#22d3ee 18%,transparent),transparent 70%)}
+.lp>*{position:relative;z-index:1}.lp>.lp-glow{position:absolute}
+.lp-nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 0}
+.lp-logo{display:flex;align-items:center;gap:.6rem;font-weight:700;color:var(--text);text-decoration:none;font-size:1.05rem}
+.lp-links{display:flex;gap:1.6rem}.lp-links a{color:var(--muted);text-decoration:none;font-size:.92rem}.lp-links a:hover{color:var(--text)}
+.lp-hero{text-align:center;padding:4.5rem 0 3rem;max-width:860px;margin:0 auto}
+.lp-pill{display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted);border:1px solid var(--border);background:color-mix(in srgb,var(--panel) 70%,transparent);border-radius:999px;padding:.25rem .8rem;margin-bottom:1.4rem}
+.lp-hero h1{font-size:clamp(2.2rem,5.4vw,3.9rem);font-weight:700;line-height:1.12;letter-spacing:-.02em;margin-bottom:1.2rem}
+.lp-grad{background:linear-gradient(90deg,var(--brand),#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lp-hero p{font-size:1.15rem;color:var(--muted);max-width:620px;margin:0 auto 2rem}
+.lp-btn{padding:.7rem 1.5rem;font-size:.95rem;border-radius:9px}
+.lp-demo{max-width:760px;margin:2.5rem auto 0;text-align:left;direction:ltr;border:1px solid var(--border);border-radius:14px;background:var(--panel);box-shadow:0 30px 80px -30px color-mix(in srgb,var(--brand) 45%,transparent);overflow:hidden}
+.lp-demo-bar{display:flex;align-items:center;gap:.4rem;padding:.65rem 1rem;border-bottom:1px solid var(--border);background:var(--panel-2)}
+.lp-demo-bar i{width:10px;height:10px;border-radius:50%;background:var(--border);display:inline-block}
+.lp-demo-bar span{margin-left:.6rem;font-size:.78rem;color:var(--muted)}
+.lp-demo-body{padding:1.2rem 1.3rem;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.86rem;line-height:1.9;color:var(--muted)}
+.lp-demo-body .ok{color:var(--ok)}.lp-demo-body .hl{color:var(--text)}
+.lp-demo-body div{opacity:0;animation:lpIn .45s ease forwards}
+.lp-demo-body div:nth-child(1){animation-delay:.2s}.lp-demo-body div:nth-child(2){animation-delay:.8s}.lp-demo-body div:nth-child(3){animation-delay:1.4s}.lp-demo-body div:nth-child(4){animation-delay:2s}.lp-demo-body div:nth-child(5){animation-delay:2.6s}
+@keyframes lpIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.lp-demo-body div{animation:none;opacity:1}}
+.lp-live{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent);background:color-mix(in srgb,var(--ok) 12%,transparent);border-radius:6px;padding:0 .5rem;margin-left:.5rem}
+.lp-sec{padding:4rem 0 1rem}
+.lp-sec h2{font-size:clamp(1.6rem,3.2vw,2.2rem);font-weight:700;letter-spacing:-.01em;text-align:center;margin-bottom:.6rem}
+.lp-sec .sub{color:var(--muted);text-align:center;max-width:560px;margin:0 auto 2.2rem}
+.lp-card{height:100%;padding:1.5rem;border:1px solid var(--border);border-radius:12px;background:var(--panel);transition:border-color .15s,transform .15s}
+.lp-card:hover{border-color:color-mix(in srgb,var(--brand) 55%,var(--border));transform:translateY(-2px)}
+.lp-card h6{font-weight:600;margin:.9rem 0 .35rem}.lp-card p{color:var(--muted);font-size:.9rem;margin:0}
+.lp-ico{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:var(--brand);background:color-mix(in srgb,var(--brand) 16%,var(--panel-2));border:1px solid var(--border)}
+.lp-steps{counter-reset:st}.lp-step{position:relative;padding:1.5rem;border:1px solid var(--border);border-radius:12px;background:var(--panel);height:100%}
+.lp-step::before{counter-increment:st;content:counter(st);display:inline-flex;width:28px;height:28px;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;background:var(--brand);margin-bottom:.9rem}
+.lp-step h6{font-weight:600}.lp-step p{color:var(--muted);font-size:.9rem;margin:0}
+.lp-cta{margin:4.5rem 0 2rem;padding:3rem 1.5rem;text-align:center;border:1px solid var(--border);border-radius:16px;background:radial-gradient(70% 120% at 50% 0%,color-mix(in srgb,var(--brand) 22%,var(--panel)),var(--panel))}
+.lp-cta h2{font-weight:700;margin-bottom:.6rem}.lp-cta p{color:var(--muted);margin-bottom:1.6rem}
+.lp-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.8rem;border-top:1px solid var(--border);padding:1.4rem 0;color:var(--muted);font-size:.82rem}
+.lp-foot a{color:var(--muted);text-decoration:none}.lp-foot a:hover{color:var(--text)}
+@media (max-width:640px){.lp-links{display:none}.lp-hero{padding-top:2.5rem}}
+/* כניסה בסגנון Render */
+.auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 30px 70px -40px color-mix(in srgb,var(--brand) 55%,transparent)}
+.btn-oauth{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.62rem;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);font-weight:500;text-decoration:none;font-size:.92rem}
+.btn-oauth:hover{border-color:var(--muted);color:var(--text)}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </style>
 </head>
@@ -172,10 +215,14 @@ LOGIN = """{% extends 'base.html' %}
 {% block content %}
 {% set tab = tab|default('login') %}
 <div class="d-flex justify-content-center pt-4">
-<div class="card p-4 p-md-5 w-100" style="max-width:460px">
+<div class="auth-card p-4 p-md-5 w-100" style="max-width:440px">
   <div class="brand-mark">SH</div>
-  <h3 class="text-center mb-1">ברוכים הבאים</h3>
+  <h3 class="text-center mb-1 fw-bold">{% if tab == 'register' %}יצירת חשבון{% else %}התחברות{% endif %}</h3>
   <p class="text-center text-muted mb-4">מדביקים קוד, ומקבלים שרת באינטרנט.</p>
+  {% if google_enabled %}
+  <a href="{{ url_for('auth_google') }}" class="btn-oauth mb-3">המשך עם Google</a>
+  <div class="d-flex align-items-center gap-2 mb-3 text-muted small"><hr class="flex-grow-1 m-0">או עם שם משתמש<hr class="flex-grow-1 m-0"></div>
+  {% endif %}
 
   <ul class="nav nav-pills nav-fill mb-4">
     <li class="nav-item"><button type="button" class="nav-link {% if tab != 'register' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#pane-login">התחברות</button></li>
@@ -216,10 +263,6 @@ LOGIN = """{% extends 'base.html' %}
     </div>
   </div>
 
-  {% if google_enabled %}
-  <div class="d-flex align-items-center gap-2 my-4 text-muted small"><hr class="flex-grow-1 m-0">או<hr class="flex-grow-1 m-0"></div>
-  <a href="{{ url_for('auth_google') }}" class="btn btn-outline-dark w-100 py-2">המשך עם Google</a>
-  {% endif %}
   <div class="text-center small mt-4"><a href="{{ url_for('index') }}" class="text-muted text-decoration-none">&rarr; על השירות</a></div>
   <div class="text-center small text-muted mt-2">חשבון חדש מתחיל לעבוד אחרי אישור מנהל.</div>
 </div>
@@ -841,52 +884,74 @@ SERVICE = """{% extends 'base.html' %}
 
 
 LANDING = """{% extends 'base.html' %}
-{% block title %}דף הבית{% endblock %}
+{% block title %}שרתים בלחיצה{% endblock %}
 {% block content %}
-<header class="d-flex justify-content-between align-items-center py-3 mb-3">
-  <div class="d-flex align-items-center gap-2 fw-bold"><span class="brand-mark brand-sm">SH</span><span>מערכת שרתים</span></div>
-  <div class="d-flex gap-2">
+<div class="lp">
+<div class="lp-glow"></div>
+<nav class="lp-nav">
+  <a href="{{ url_for('index') }}" class="lp-logo"><span class="brand-mark brand-sm">SH</span>מערכת שרתים</a>
+  <div class="lp-links"><a href="#features">תכונות</a><a href="#how">איך זה עובד</a></div>
+  <div class="d-flex gap-2 align-items-center">
     <a href="{{ url_for('login_page') }}" class="btn btn-outline-secondary btn-sm">התחברות</a>
-    <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary btn-sm">הרשמה</a>
+    <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary btn-sm">התחל עכשיו</a>
   </div>
-</header>
+</nav>
 
-<section class="hero text-center py-5 mx-auto" style="max-width:740px">
-  <h1 class="fw-bold mb-3">מדביקים קוד, ומקבלים שרת באינטרנט</h1>
-  <p class="text-muted fs-5 mb-4">כל שרת עולה בכתובת משלו, בצורה <span class="ltr d-inline-block">/שם_משתמש/שם_שרת</span>. בלי להקים תשתית ובלי להתעסק בפריסה.</p>
+<section class="lp-hero">
+  <div class="lp-pill"><span class="dot dot-ok"></span>פריסה בשניות, בלי תשתית</div>
+  <h1>מדביקים קוד.<br><span class="lp-grad">מקבלים שרת באינטרנט.</span></h1>
+  <p>מעלים אפליקציית Flask או מייבאים ריפו מ-GitHub, והשרת עולה מיד בכתובת משלו. בלי להקים שרתים ובלי להתעסק בפריסה.</p>
   <div class="d-flex justify-content-center gap-2 flex-wrap">
-    <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary px-4 py-2">יצירת חשבון</a>
-    <a href="{{ url_for('login_page') }}" class="btn btn-outline-secondary px-4 py-2">כבר יש לי חשבון</a>
+    <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary lp-btn">התחל עכשיו</a>
+    <a href="{{ url_for('login_page') }}" class="btn btn-outline-secondary lp-btn">התחברות</a>
+  </div>
+
+  <div class="lp-demo" aria-hidden="true">
+    <div class="lp-demo-bar"><i></i><i></i><i></i><span>deploy · alice/hello</span></div>
+    <div class="lp-demo-body">
+      <div>$ <span class="hl">deploy</span> github.com/alice/hello</div>
+      <div><span class="ok">&#10003;</span> Code validated</div>
+      <div><span class="ok">&#10003;</span> Dependencies installed</div>
+      <div><span class="ok">&#10003;</span> Environment variables loaded</div>
+      <div><span class="hl">/alice/hello</span><span class="lp-live"><span class="dot dot-ok"></span>Live</span></div>
+    </div>
   </div>
 </section>
 
-<section class="mb-5">
-  <h4 class="fw-semibold text-center mb-4">איך זה עובד</h4>
+<section class="lp-sec" id="features">
+  <h2>כל מה שצריך כדי להעלות שרת</h2>
+  <div class="sub">פשוט כמו להדביק קוד, עם הכלים שמצפים להם משירות אירוח.</div>
   <div class="row g-3">
-    <div class="col-md-4"><div class="card p-4 feat"><span class="step-num mb-3">1</span><h6>נרשמים</h6><div class="text-muted small">פותחים חשבון עם שם משתמש וסיסמה{% if google_enabled %}, או נכנסים עם Google{% endif %}. מנהל המערכת מאשר כל חשבון חדש.</div></div></div>
-    <div class="col-md-4"><div class="card p-4 feat"><span class="step-num mb-3">2</span><h6>מדביקים קוד או מייבאים מ-GitHub</h6><div class="text-muted small">אפליקציית Flask רגילה, קובץ בודד או ריפו שלם.</div></div></div>
-    <div class="col-md-4"><div class="card p-4 feat"><span class="step-num mb-3">3</span><h6>השרת עולה מיד</h6><div class="text-muted small">אחרי שהחשבון אושר, אין אישור נוסף לכל שרת. מקבלים כתובת ועובדים איתה.</div></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">Py</span><h6>Python ישירות</h6><p>קוד Flask רץ כמו שהוא, בלי שינוי ובלי AI.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">GH</span><h6>ייבוא מ-GitHub</h6><p>קובץ בודד או ריפו שלם, גם פרטי עם טוקן קריאה בלבד, ומשיכת גרסה עדכנית בלחיצה.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">AI</span><h6>תרגום משפות אחרות</h6><p>PHP, JavaScript, Java, Go, Ruby ו-C# מתורגמים ל-Flask. נדרש מפתח API משלך.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#9998;</span><h6>עורך קוד באתר</h6><p>עורכים בדפדפן, או מבקשים מה-AI שינוי ורואים מה השתנה לפני השמירה.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#128274;</span><h6>משתני סביבה מוצפנים</h6><p>מפתחות וסיסמאות נשמרים מוצפנים ולא מוצגים אחרי השמירה.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#9776;</span><h6>יומנים</h6><p>הבקשות האחרונות לכל שרת, עם רענון אוטומטי.</p></div></div>
   </div>
 </section>
 
-<section class="mb-5">
-  <h4 class="fw-semibold text-center mb-4">מה יש במערכת</h4>
-  <div class="row g-3">
-    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">Py</span><h6>Python ישירות</h6><div class="text-muted small">קוד Flask רץ כמו שהוא, בלי שינוי ובלי AI.</div></div></div>
-    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">AI</span><h6>תרגום משפות אחרות</h6><div class="text-muted small">PHP, JavaScript, Java, Go, Ruby ו-C# מתורגמים ל-Flask בעזרת Anthropic, OpenAI או Gemini. נדרש מפתח API משלך.</div></div></div>
-    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">GH</span><h6>ייבוא מ-GitHub</h6><div class="text-muted small">קובץ בודד או ריפו שלם, כולל ריפו פרטי עם טוקן קריאה בלבד, ומשיכת גרסה עדכנית בלחיצה.</div></div></div>
-    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">&#9998;</span><h6>עורך קוד באתר</h6><div class="text-muted small">עורכים את הקוד בדפדפן, או מבקשים מה-AI שינוי ורואים מה השתנה לפני השמירה.</div></div></div>
-    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">&#128274;</span><h6>משתני סביבה מוצפנים</h6><div class="text-muted small">מפתחות וסיסמאות נשמרים מוצפנים, ולא מוצגים אחרי השמירה.</div></div></div>
-    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">&#9776;</span><h6>יומנים</h6><div class="text-muted small">הבקשות האחרונות לכל שרת, עם רענון אוטומטי.</div></div></div>
+<section class="lp-sec" id="how">
+  <h2>איך זה עובד</h2>
+  <div class="sub">שלושה צעדים מהקוד לכתובת חיה.</div>
+  <div class="row g-3 lp-steps">
+    <div class="col-md-4"><div class="lp-step"><h6>פותחים חשבון</h6><p>שם משתמש וסיסמה{% if google_enabled %}, או Google{% endif %}. מנהל המערכת מאשר כל חשבון חדש.</p></div></div>
+    <div class="col-md-4"><div class="lp-step"><h6>מדביקים או מייבאים</h6><p>מדביקים קוד, או מחברים קובץ וריפו מ-GitHub.</p></div></div>
+    <div class="col-md-4"><div class="lp-step"><h6>השרת עולה מיד</h6><p>אחרי שהחשבון אושר אין אישור לכל שרת. מקבלים כתובת ועובדים איתה.</p></div></div>
   </div>
 </section>
 
-<section class="mb-5">
-  <div class="card p-4 mx-auto" style="max-width:740px;border-inline-start:3px solid var(--brand)">
-    <h6 class="mb-1">כללי הכניסה</h6>
-    <div class="text-muted small">ההרשמה פתוחה, אבל חשבון חדש מתחיל לעבוד רק אחרי שמנהל אישר אותו. עד האישור אפשר להתחבר ולראות דף המתנה. מנהל המערכת יכול לראות את השרתים של כל משתמש, לערוך אותם, למחוק אותם או להשעות את החשבון.</div>
-  </div>
+<section class="lp-cta">
+  <h2>מוכנים להעלות את השרת הראשון?</h2>
+  <p>ההרשמה פתוחה. החשבון מתחיל לעבוד אחרי אישור מנהל.</p>
+  <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary lp-btn">יצירת חשבון</a>
 </section>
+
+<footer class="lp-foot">
+  <span>© מערכת שרתים</span>
+  <span><a href="{{ url_for('login_page') }}">התחברות</a> · <a href="{{ url_for('login_page') }}?tab=register">הרשמה</a></span>
+</footer>
+</div>
 {% endblock %}"""
 
 PENDING = """{% extends 'base.html' %}
