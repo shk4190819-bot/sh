@@ -173,16 +173,43 @@ DASHBOARD = """{% extends 'base.html' %}
       <h5 class="mb-3">פריסת שרת חדש</h5>
       <form method="post" action="{{ url_for('deploy_server') }}">
         __CSRF__
+        <div class="btn-group w-100 mb-3" role="group">
+          <input type="radio" class="btn-check" name="source_mode" id="mode_paste" value="paste" checked>
+          <label class="btn btn-outline-primary" for="mode_paste">הדבקת קוד</label>
+          <input type="radio" class="btn-check" name="source_mode" id="mode_github" value="github">
+          <label class="btn btn-outline-primary" for="mode_github">קובץ מ-GitHub</label>
+          <input type="radio" class="btn-check" name="source_mode" id="mode_repo" value="repo">
+          <label class="btn btn-outline-primary" for="mode_repo">ריפו שלם מ-GitHub</label>
+        </div>
+
         <div class="row g-3 mb-3">
           <div class="col-sm-6">
             <label class="form-label">שם הנתיב</label>
             <input type="text" name="route_name" class="form-control ltr" placeholder="hello" required data-lower pattern="[a-z0-9][a-z0-9_]{0,39}" title="אותיות אנגליות קטנות, ספרות או _ (עד 40 תווים)" autocapitalize="none">
             <div class="form-text">הכתובת: <span class="ltr d-inline-block">/{{ current_user.username }}/<b id="rnPreview">...</b></span></div>
           </div>
-          <div class="col-sm-6">
+          <div class="col-sm-6 paste-only">
             <label class="form-label">שפת הקוד שהדבקת</label>
             <input type="text" name="source_lang" id="lang" list="langs" class="form-control ltr" value="Python" required maxlength="30">
             <datalist id="langs"><option value="Python"><option value="PHP"><option value="JavaScript"><option value="Node.js"><option value="Java"><option value="C#"><option value="Go"><option value="Ruby"></datalist>
+          </div>
+        </div>
+
+        <div class="gh-any d-none">
+          <label class="form-label">כתובת הריפו או הקובץ ב-GitHub</label>
+          <input type="text" name="github_url" id="github_url" class="form-control ltr mb-1" placeholder="https://github.com/user/repo">
+          <div class="form-text mb-3 gh-file-only">אפשר להדביק קישור ישיר לקובץ (…/blob/main/app.py), או רק את הריפו ולמלא נתיב.</div>
+          <div class="form-text mb-3 repo-only">אפשר להדביק גם קישור לתיקייה בתוך הריפו (…/tree/main/server).</div>
+          <div class="row g-3 mb-3">
+            <div class="col-sm-4 gh-file-only"><label class="form-label">נתיב הקובץ (אם לא בקישור)</label><input type="text" name="github_path" class="form-control ltr" placeholder="app.py"></div>
+            <div class="col-sm-4 repo-only"><label class="form-label">תיקייה בריפו (אופציונלי)</label><input type="text" name="github_subdir" class="form-control ltr" placeholder="server"></div>
+            <div class="col-sm-4 repo-only"><label class="form-label">קובץ ראשי (אופציונלי)</label><input type="text" name="github_entry" class="form-control ltr" placeholder="app.py"></div>
+            <div class="col-sm-4"><label class="form-label">ענף (אופציונלי)</label><input type="text" name="github_ref" class="form-control ltr" placeholder="main"></div>
+          </div>
+          <div class="form-text mb-3">
+            {% if 'github' in saved_providers %}GitHub מחובר, ואפשר לייבא גם מריפו פרטי.{% else %}ריפו ציבורי לא דורש חיבור. לריפו פרטי חבר טוקן בכרטיס "חיבור GitHub".{% endif %}
+            <span class="gh-file-only">מיובא קובץ אחד. קובץ py נשלח ישירות, וסוגי קבצים אחרים מתורגמים ב-AI.</span>
+            <span class="repo-only">הריפו כולו (קבצי טקסט, עד 100 קבצים ו-1.5MB) נשמר כשרת אחד. בלי AI.</span>
           </div>
         </div>
 
@@ -200,16 +227,18 @@ DASHBOARD = """{% extends 'base.html' %}
         </div>
         <div id="modeHint" class="alert alert-light border small"></div>
 
-        <label class="form-label">הקוד</label>
-        <textarea name="code" id="code" class="form-control ltr code" rows="12" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
-        <div id="codeCount" class="form-text mb-3 text-end"></div>
+        <div class="paste-only">
+          <label class="form-label">הקוד</label>
+          <textarea name="code" id="code" class="form-control ltr code" rows="10" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
+          <div id="codeCount" class="form-text mb-3 text-end"></div>
+        </div>
         <button type="submit" class="btn btn-primary px-4 js-load">שלח לפריסה</button>
       </form>
     </div>
   </div>
 
   <div class="col-lg-5">
-    <div class="card p-4 h-100">
+    <div class="card p-4 mb-4">
       <h5 class="mb-1">מפתחות API</h5>
       <div class="text-muted small mb-3">נדרשים רק לתרגום קוד משפות שאינן Python. נשמרים מוצפנים.</div>
       {% for key, label in providers.items() %}
@@ -237,6 +266,34 @@ DASHBOARD = """{% extends 'base.html' %}
         <button name="action" value="save" class="btn btn-outline-primary w-100">שמור מפתח</button>
       </form>
     </div>
+
+    <div class="card p-4">
+      <h5 class="mb-1">חיבור GitHub</h5>
+      <div class="text-muted small mb-3">לייבוא קוד מריפו פרטי. ריפו ציבורי לא דורש חיבור.</div>
+      {% if 'github' in saved_providers %}
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="badge bg-success">מחובר</span>
+        <form method="post" action="{{ url_for('update_github') }}" class="m-0" data-confirm="לנתק את החיבור ל-GitHub?">
+          __CSRF__<button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק</button>
+        </form>
+      </div>
+      {% else %}
+      <form method="post" action="{{ url_for('update_github') }}">
+        __CSRF__
+        <input type="password" name="token" class="form-control ltr mb-2" placeholder="github_pat_..." autocomplete="off" required>
+        <button name="action" value="save" class="btn btn-outline-primary w-100">חבר GitHub</button>
+      </form>
+      <details class="mt-3 small text-muted">
+        <summary>איך יוצרים טוקן קריאה בלבד?</summary>
+        <ol class="ps-3 mb-0 mt-2">
+          <li>ב-GitHub: Settings, Developer settings, Personal access tokens, Fine-grained tokens.</li>
+          <li>Generate new token. ב-Repository access בחר רק את הריפו שצריך.</li>
+          <li>ב-Repository permissions הגדר Contents: Read-only.</li>
+          <li>העתק את הטוקן והדבק כאן. הוא נשמר מוצפן ומשמש לקריאה בלבד.</li>
+        </ol>
+      </details>
+      {% endif %}
+    </div>
   </div>
 </div>
 
@@ -255,6 +312,8 @@ DASHBOARD = """{% extends 'base.html' %}
           {% elif route.status == 'rejected' %}<span class="badge bg-danger">נדחה</span>
           {% else %}<span class="badge bg-warning text-dark">ממתין לאישור</span>{% endif %}
           {% if route.status == 'active' and route.pending_code %}<span class="badge bg-warning text-dark">עדכון ממתין</span>{% endif %}
+          {% if route.source %}<span class="badge bg-dark">GitHub</span>{% endif %}
+          {% if (route.live_code or route.pending_code or '').startswith('{"bundle"') %}<span class="badge bg-info text-dark">כמה קבצים</span>{% endif %}
         </td>
         <td class="text-end text-nowrap">
           {% if route.status == 'active' %}
@@ -273,7 +332,7 @@ DASHBOARD = """{% extends 'base.html' %}
   {% else %}
   <div class="text-muted mb-3">עוד אין לך שרתים. כך זה עובד:</div>
   <div class="d-flex flex-column gap-2">
-    <div class="d-flex gap-2 align-items-center"><span class="step-num">1</span>בוחרים שם נתיב ומדביקים קוד בטופס למעלה.</div>
+    <div class="d-flex gap-2 align-items-center"><span class="step-num">1</span>בוחרים שם נתיב ומדביקים קוד (או מייבאים קובץ מ-GitHub) בטופס למעלה.</div>
     <div class="d-flex gap-2 align-items-center"><span class="step-num">2</span>מנהל קורא את הקוד ומאשר אותו.</div>
     <div class="d-flex gap-2 align-items-center"><span class="step-num">3</span>השרת עולה בכתובת שמופיעה כאן, ואפשר להעתיק אותה בלחיצה.</div>
   </div>
@@ -284,27 +343,32 @@ DASHBOARD = """{% extends 'base.html' %}
 <script>
 (function(){
   var PY=['python','py','python3','flask'];
-  var lang=document.getElementById('lang'), aiBox=document.getElementById('aiBox'), pyBox=document.getElementById('pyBox');
-  var force=document.getElementById('force_ai'), hint=document.getElementById('modeHint');
+  function $(id){return document.getElementById(id);}
+  var lang=$('lang'), aiBox=$('aiBox'), pyBox=$('pyBox'), force=$('force_ai'), hint=$('modeHint');
+  var code=$('code'), cnt=$('codeCount'), ghUrl=$('github_url');
+  function mode(){return document.querySelector('input[name=source_mode]:checked').value;}
+  function isPy(){return PY.indexOf(lang.value.trim().toLowerCase())>-1;}
+  function show(sel,on){document.querySelectorAll(sel).forEach(function(e){e.classList.toggle('d-none',!on);});}
   function upd(){
-    var isPy=PY.indexOf(lang.value.trim().toLowerCase())>-1;
-    pyBox.classList.toggle('d-none',!isPy);
-    var useAi=!isPy||force.checked;
+    var m=mode(), gh=m!=='paste', repo=m==='repo', file=m==='github';
+    show('.paste-only',!gh); show('.gh-any',gh); show('.gh-file-only',file); show('.repo-only',repo);
+    code.required=!gh; lang.required=!gh; ghUrl.required=gh;
+    pyBox.classList.toggle('d-none',gh||!isPy());
+    var useAi=file||(!gh&&(!isPy()||force.checked));
     aiBox.classList.toggle('d-none',!useAi);
-    hint.textContent=useAi
-      ? 'הקוד יתורגם ל-Flask על ידי ספק ה-AI שבחרת (נדרש מפתח API שמור).'
-      : 'קוד Python נשלח ישירות לבדיקה, בלי AI. הוא חייב להגדיר Blueprint בשם bp עם נתיבים יחסיים, למשל /.';
-  }
-  var code=document.getElementById('code'), cnt=document.getElementById('codeCount');
-  function count(){
-    var isPy=PY.indexOf(lang.value.trim().toLowerCase())>-1, useAi=!isPy||force.checked;
+    hint.textContent=repo
+      ? 'הריפו (או התיקייה) מורד כ-ZIP. הקובץ הראשי חייב להגדיר app (Flask) או bp (Blueprint), והקבצים יכולים לייבא זה את זה, להשתמש ב-templates וב-static. ספריות חיצוניות מותקנות אוטומטית רק אם הן ברשימת ההיתר.'
+      : file
+      ? 'הקובץ נמשך מ-GitHub. קובץ py נשלח ישירות לבדיקה, בלי AI. סוגי קבצים אחרים יתורגמו ב-AI של הספק שבחרת (נדרש מפתח שמור).'
+      : (useAi ? 'הקוד יתורגם ל-Flask על ידי ספק ה-AI שבחרת (נדרש מפתח API שמור).'
+               : 'קוד Python נשלח ישירות לבדיקה, בלי AI. הוא חייב להגדיר Blueprint בשם bp עם נתיבים יחסיים, למשל /.');
     var max=parseInt(useAi?code.dataset.maxAi:code.dataset.maxDirect,10), n=code.value.length;
     cnt.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים'+(useAi?' (תרגום ב-AI)':' (Python ישיר)');
     cnt.classList.toggle('text-danger',n>max);
   }
-  function both(){upd();count();}
-  lang.addEventListener('input',both); force.addEventListener('change',both); code.addEventListener('input',count); both();
-  var rn=document.querySelector('[name=route_name]'), pv=document.getElementById('rnPreview');
+  document.querySelectorAll('input[name=source_mode]').forEach(function(r){r.addEventListener('change',upd);});
+  lang.addEventListener('input',upd); force.addEventListener('change',upd); code.addEventListener('input',upd); upd();
+  var rn=document.querySelector('[name=route_name]'), pv=$('rnPreview');
   rn.addEventListener('input',function(){pv.textContent=rn.value||'...';});
   document.querySelectorAll('[data-lower]').forEach(function(i){i.addEventListener('input',function(){i.value=i.value.toLowerCase();});});
   document.querySelectorAll('.js-copy').forEach(function(b){b.addEventListener('click',function(){
@@ -322,6 +386,7 @@ REVIEW = """{% extends 'base.html' %}
 <div class="text-muted mb-3">
   {{ route.owner.username }} · <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span> · שפת מקור: {{ route.source_lang }}
 </div>
+{% if route.source %}<div class="text-muted small mb-2">מקור: GitHub · <span class="ltr d-inline-block">{{ route.source.repo }}{% if route.source.path %}/{{ route.source.path }}{% endif %}</span> · <span class="ltr d-inline-block">{{ (route.source.sha or '')[:7] }}</span></div>{% endif %}
 <div class="alert alert-warning">הקוד ירוץ בתוך תהליך השרת. אשר רק אם קראת אותו עד הסוף והוא לא נוגע בסודות, בקבצים או במסד הנתונים.</div>
 <h6 class="mt-3">ספריות חיצוניות</h6>
 <div class="mb-3">
@@ -342,6 +407,24 @@ REVIEW = """{% extends 'base.html' %}
     <span class="text-muted small">הקוד משתמש רק ב-Flask ובספריית הסטנדרט.</span>
   {% endif %}
 </div>
+{% if bundle %}
+<div class="alert alert-info small">שרת מרובה קבצים · {{ bundle.files|length }} קבצים · קובץ ראשי: <code class="ltr">{{ bundle.entry }}</code></div>
+{% if bundle.changes is not none %}
+<h6>קבצים ששונו לעומת הגרסה הפעילה ({{ bundle.changes|length }})</h6>
+{% for c in bundle.changes %}
+<details class="mb-2" {% if loop.index <= 3 %}open{% endif %}>
+  <summary class="ltr">{{ c.path }} <span class="badge {% if c.status == 'new' %}bg-success{% elif c.status == 'deleted' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{% if c.status == 'new' %}חדש{% elif c.status == 'deleted' %}נמחק{% else %}שונה{% endif %}</span></summary>
+  <pre class="code ltr p-3 rounded-3 diff">{% for l in c.diff %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
+</details>
+{% else %}
+<div class="text-muted small mb-2">אין הבדלים לעומת הגרסה הפעילה.</div>
+{% endfor %}
+{% endif %}
+<h6 class="mt-3">כל הקבצים</h6>
+{% for path, src in bundle.files.items() %}
+<details class="mb-2"><summary class="ltr">{{ path }}</summary><pre class="code ltr p-3 rounded-3 text-light" style="background:#1e1e2e;white-space:pre-wrap;max-height:50vh;overflow:auto">{{ src }}</pre></details>
+{% endfor %}
+{% else %}
 {% if diff_lines %}
 <h6>שינויים לעומת הגרסה הפעילה</h6>
 <pre class="code ltr p-3 rounded-3 diff">{% for l in diff_lines %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
@@ -350,6 +433,7 @@ REVIEW = """{% extends 'base.html' %}
 {% endif %}
 <h6>הקוד המלא</h6>
 <pre class="code ltr p-3 rounded-3 text-light" style="background:#1e1e2e;white-space:pre-wrap;max-height:60vh;overflow:auto">{{ route.pending_code }}</pre>
+{% endif %}
 <div class="d-flex gap-2">
   <form method="post" action="{{ url_for('approve_route', route_id=route.id) }}">__CSRF__<button class="btn btn-success px-4"{% if libs | selectattr('status', 'equalto', 'blocked') | list %} disabled{% endif %}>אשר ופרוס</button></form>
   <form method="post" action="{{ url_for('reject_route', route_id=route.id) }}">__CSRF__<button class="btn btn-outline-danger px-4">דחה</button></form>
@@ -394,6 +478,23 @@ EDIT = """{% extends 'base.html' %}
   הקוד חייב להגדיר Blueprint בשם <code>bp</code> עם נתיבים יחסיים.
 </div>
 
+{% if route.source %}
+<div class="card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <span class="badge bg-dark">GitHub</span>
+      <span class="ltr d-inline-block">{{ route.source.repo }}{% if route.source.path %}/{{ route.source.path }}{% endif %}{% if route.source.ref %} @ {{ route.source.ref }}{% endif %}</span>{% if bundle %}<span class="text-muted small">(כמה קבצים)</span>{% endif %}
+      <span class="text-muted small ltr d-inline-block">{{ (route.source.sha or '')[:7] }}</span>
+    </div>
+    {% if bundle or route.source.path.lower().endswith('.py') %}
+    <form method="post" action="{{ url_for('sync_route', route_id=route.id) }}" class="m-0">__CSRF__<button class="btn btn-sm btn-outline-primary js-load">משוך גרסה עדכנית מ-GitHub</button></form>
+    {% endif %}
+  </div>
+  <div class="form-text mt-1">גרסה חדשה שנמשכת מהריפו עוברת את אותו אישור מנהל כמו כל שינוי קוד.</div>
+</div>
+{% endif %}
+
+{% if not bundle %}
 <div class="card p-3 mb-3">
   <h6 class="mb-2">עריכה בעזרת AI</h6>
   <form method="post" action="{{ url_for('edit_route_ai', route_id=route.id) }}" id="aiForm">
@@ -437,8 +538,54 @@ EDIT = """{% extends 'base.html' %}
     <span class="text-muted small">Ctrl+S לשמירה · Tab להזחה</span>
   </div>
 </form>
+{% else %}
+<div class="alert alert-info small">שרת מרובה קבצים: {{ bundle.files|length }} קבצים, קובץ ראשי <code class="ltr">{{ bundle.entry }}</code>. אפשר לערוך את תוכן הקבצים. כדי להוסיף או למחוק קבצים, משוך מחדש מ-GitHub. עריכה בעזרת AI זמינה רק לשרתים של קובץ בודד.</div>
+<form method="post" action="{{ url_for('edit_route', route_id=route.id) }}" id="bundleForm">
+  __CSRF__
+  <input type="hidden" name="bundle_json" id="bundleJson">
+  <div class="d-flex gap-2 align-items-center mb-2 flex-wrap">
+    <select id="fileSel" class="form-select ltr" style="max-width:420px"></select>
+    <span class="text-muted small" id="fileInfo"></span>
+  </div>
+  <textarea id="bcode" class="form-control ltr code mb-1" rows="24" spellcheck="false"></textarea>
+  <div class="form-text text-end mb-3" id="bcount"></div>
+  <div class="d-flex gap-2 align-items-center">
+    <button type="submit" class="btn btn-primary px-4 js-load">שמור שינויים</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
+    <span class="text-muted small">Ctrl+S לשמירה · Tab להזחה</span>
+  </div>
+</form>
+<script type="application/json" id="bundleData">{{ bundle|tojson }}</script>
+{% endif %}
+
+<div class="card p-3 mt-4">
+  <h6 class="mb-1">משתני סביבה</h6>
+  <div class="text-muted small mb-3">
+    לסודות כמו מפתחות API. נשמרים מוצפנים ולא מוצגים אחרי השמירה. בקוד קוראים אותם כך:
+    <code class="ltr d-inline-block">env.get("NAME")</code> (המשתנה <code>env</code> קיים אוטומטית, אין צורך לייבא).
+    שינוי משתנה נכנס לתוקף מיד, בלי אישור מנהל.
+  </div>
+  {% for n in env_names %}
+  <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+    <span class="ltr"><code>{{ n }}</code> <span class="text-muted">= ••••••••</span></span>
+    <form method="post" action="{{ url_for('delete_env_var', route_id=route.id) }}" class="m-0" data-confirm="למחוק את המשתנה {{ n }}?">
+      __CSRF__<input type="hidden" name="name" value="{{ n }}"><button class="btn btn-sm btn-outline-danger">מחק</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="text-muted small mb-2">עוד לא הוגדרו משתנים.</div>
+  {% endfor %}
+  <form method="post" action="{{ url_for('set_env_var', route_id=route.id) }}" class="row g-2 mt-2">
+    __CSRF__
+    <div class="col-md-4"><input name="name" class="form-control ltr" placeholder="NAME" required pattern="[A-Za-z_][A-Za-z0-9_]{0,63}" autocomplete="off" autocapitalize="characters"></div>
+    <div class="col-md-6"><input type="password" name="value" class="form-control ltr" placeholder="ערך" required autocomplete="off"></div>
+    <div class="col-md-2"><button class="btn btn-outline-primary w-100 js-load">שמור</button></div>
+  </form>
+  <div class="form-text">שמירה בשם קיים מחליפה את הערך.</div>
+</div>
 {% endblock %}
 {% block scripts %}
+{% if not bundle %}
 <script>
 (function(){
   var t=document.getElementById('code'), c=document.getElementById('codeCount'), f=document.getElementById('editForm'), ai=document.getElementById('aiForm');
@@ -456,6 +603,29 @@ EDIT = """{% extends 'base.html' %}
   window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue='';}});
 })();
 </script>
+{% else %}
+<script>
+(function(){
+  var data=JSON.parse(document.getElementById('bundleData').textContent), files=data.files, entry=data.entry;
+  var sel=document.getElementById('fileSel'), ta=document.getElementById('bcode'), cnt=document.getElementById('bcount');
+  var info=document.getElementById('fileInfo'), form=document.getElementById('bundleForm');
+  var cur=null, dirty=false, names=Object.keys(files).sort();
+  names.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=(p===entry?'★ ':'')+p;sel.appendChild(o);});
+  function count(){cnt.textContent=ta.value.length.toLocaleString('en-US')+' תווים בקובץ';}
+  function save(){if(cur!==null){files[cur]=ta.value;}}
+  function show(p){cur=p;sel.value=p;ta.value=files[p];info.textContent=p===entry?'קובץ ראשי':'';count();}
+  sel.addEventListener('change',function(){save();show(sel.value);});
+  ta.addEventListener('input',function(){dirty=true;count();});
+  ta.addEventListener('keydown',function(e){
+    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();var s=ta.selectionStart,en=ta.selectionEnd;ta.value=ta.value.substring(0,s)+'    '+ta.value.substring(en);ta.selectionStart=ta.selectionEnd=s+4;dirty=true;count();}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();form.requestSubmit();}
+  });
+  form.addEventListener('submit',function(){save();document.getElementById('bundleJson').value=JSON.stringify(files);dirty=false;});
+  window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue='';}});
+  show(files[entry]!==undefined?entry:names[0]);
+})();
+</script>
+{% endif %}
 {% endblock %}"""
 
 TEMPLATES = {
