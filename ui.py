@@ -100,11 +100,17 @@ details>summary{cursor:pointer;color:var(--muted)}
   .svc-nav{flex-direction:row;overflow-x:auto;position:static;border-bottom:1px solid var(--border);padding-bottom:.5rem}.svc-nav-title{display:none}
 }
 
+.usr-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,.7fr) minmax(0,.9fr) auto;align-items:center;gap:1rem;padding:.8rem 1.1rem}
+@media (max-width:820px){.usr-row{grid-template-columns:minmax(0,1fr) auto}.usr-row .c-hide{display:none}}
+.hero h1{font-size:2.4rem;line-height:1.25}
+@media (max-width:576px){.hero h1{font-size:1.8rem}}
+.feat{height:100%}
+.feat .fi{width:36px;height:36px;border-radius:9px;background:color-mix(in srgb,var(--brand) 18%,var(--panel-2));border:1px solid var(--border);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:.7rem}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </style>
 </head>
 <body>
-{% if current_user %}
+{% if current_user and (current_user.is_approved or current_user.is_admin) %}
 <header class="topbar mb-4"><div class="container inner d-flex justify-content-between align-items-center" style="max-width:1180px">
   <div class="d-flex align-items-center gap-3">
     <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none fw-bold" style="color:var(--text)">
@@ -112,6 +118,7 @@ details>summary{cursor:pointer;color:var(--muted)}
     </a>
     <nav class="topnav d-flex gap-1">
       <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs') %}on{% endif %}">שרתים</a>
+      {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}">משתמשים{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
       <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}">הגדרות חשבון</a>
     </nav>
   </div>
@@ -213,6 +220,8 @@ LOGIN = """{% extends 'base.html' %}
   <div class="d-flex align-items-center gap-2 my-4 text-muted small"><hr class="flex-grow-1 m-0">או<hr class="flex-grow-1 m-0"></div>
   <a href="{{ url_for('auth_google') }}" class="btn btn-outline-dark w-100 py-2">המשך עם Google</a>
   {% endif %}
+  <div class="text-center small mt-4"><a href="{{ url_for('index') }}" class="text-muted text-decoration-none">&rarr; על השירות</a></div>
+  <div class="text-center small text-muted mt-2">חשבון חדש מתחיל לעבוד אחרי אישור מנהל.</div>
 </div>
 </div>
 {% endblock %}
@@ -243,20 +252,39 @@ DASHBOARD = """{% extends 'base.html' %}
 {% block title %}שרתים{% endblock %}
 {% block content %}
 {% if current_user.is_admin %}
+{% if pending_users %}
 <div class="card p-4 mb-4" style="border-inline-start:3px solid var(--warn)">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-    <h5 class="mb-0">ממתינים לאישור <span class="badge bg-warning text-dark">{{ pending|length }}</span></h5>
-    <span class="text-muted small">{{ users_count }} משתמשים · {{ active_count }} שרתים פעילים</span>
+    <h5 class="mb-0">משתמשים שממתינים לאישור <span class="badge bg-warning text-dark">{{ pending_users|length }}</span></h5>
+    <a href="{{ url_for('admin_users') }}" class="small">ניהול כל המשתמשים</a>
   </div>
+  {% for u in pending_users %}
+  <div class="d-flex justify-content-between align-items-center py-2 border-top flex-wrap gap-2">
+    <div>
+      <a href="{{ url_for('admin_user', user_id=u.id) }}" class="fw-semibold ltr d-inline-block text-decoration-none">{{ u.username }}</a>
+      <span class="text-muted small">· {% if u.email %}<span class="ltr d-inline-block">{{ u.email }}</span>{% else %}נרשם עם סיסמה{% endif %} · {{ u.created_at|timeago }}</span>
+    </div>
+    <div class="d-flex gap-2">
+      <form method="post" action="{{ url_for('approve_user', user_id=u.id) }}" class="m-0">__CSRF__<input type="hidden" name="back" value="index"><button class="btn btn-sm btn-success">אשר</button></form>
+      <form method="post" action="{{ url_for('delete_user', user_id=u.id) }}" class="m-0" data-confirm="לדחות ולמחוק את המשתמש {{ u.username }}?">__CSRF__<input type="hidden" name="back" value="index"><button class="btn btn-sm btn-outline-danger">דחה</button></form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% if pending %}
+<div class="card p-4 mb-4" style="border-inline-start:3px solid var(--warn)">
+  <h5 class="mb-2">שרתים ישנים שממתינים לאישור <span class="badge bg-warning text-dark">{{ pending|length }}</span></h5>
+  <div class="text-muted small mb-1">נשלחו לפני המעבר לאישור משתמשים. שרתים חדשים עולים מיד.</div>
   {% for r in pending %}
   <div class="d-flex justify-content-between align-items-center py-2 border-top flex-wrap gap-2">
     <div><span class="url-chip ltr d-inline-block">{{ r.full_path }}</span> <span class="text-muted small">{{ r.source_lang }}</span></div>
     <a href="{{ url_for('review_route', route_id=r.id) }}" class="btn btn-sm btn-warning">בדוק ואשר</a>
   </div>
-  {% else %}
-  <div class="text-muted">אין בקשות ממתינות.</div>
   {% endfor %}
 </div>
+{% endif %}
+<div class="text-muted small mb-3">{{ users_count }} משתמשים · {{ active_count }} שרתים פעילים · <a href="{{ url_for('admin_users') }}">ניהול משתמשים</a></div>
 {% endif %}
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -266,7 +294,7 @@ DASHBOARD = """{% extends 'base.html' %}
 <div class="d-flex gap-2 flex-wrap mb-3">
   <input type="search" id="srvSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש שרתים...">
   <select id="srvFilter" class="form-select form-select-sm" style="width:auto">
-    <option value="">כל הסטטוסים</option><option value="active">פעיל</option><option value="pending">ממתין לאישור</option><option value="rejected">נדחה</option>
+    <option value="">כל הסטטוסים</option><option value="active">פעיל</option><option value="pending">לא פעיל</option><option value="rejected">נדחה</option>
   </select>
   <span class="text-muted small align-self-center ms-auto">{{ routes|length }} שרתים</span>
 </div>
@@ -286,8 +314,8 @@ DASHBOARD = """{% extends 'base.html' %}
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
-      <span>{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}ממתין לאישור{% endif %}</span>
-      {% if route.status == 'active' and route.pending_code %}<span class="chip" style="color:var(--warn)">עדכון ממתין</span>{% endif %}
+      <span>{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span>
+      {% if route.status == 'active' and route.pending_code %}<span class="chip" style="color:var(--warn)">העדכון האחרון לא עלה</span>{% endif %}
     </div>
     <div class="c-runtime text-muted">Python 3{% if route.source %} · GitHub{% endif %}{% if is_bundle %} · כמה קבצים{% endif %}</div>
     <div class="c-upd text-muted">{{ route.updated_at|timeago }}</div>
@@ -446,10 +474,10 @@ EDIT = """{% extends 'service.html' %}
 {% block service_content %}
 <h5 class="fw-semibold mb-3">קוד</h5>
 {% if route.pending_code and route.live_code %}
-<div class="alert alert-warning">יש כבר גרסה חדשה שממתינה לאישור. העריכה ממשיכה ממנה, והגרסה הפעילה ממשיכה לרוץ בינתיים.</div>
+<div class="alert alert-warning">הגרסה האחרונה שנשמרה לא עלתה (כנראה שגיאת טעינה). העריכה ממשיכה ממנה, והגרסה הקודמת ממשיכה לרוץ בינתיים.</div>
 {% endif %}
 <div class="alert alert-light border small">
-  {% if current_user.is_admin %}כמנהל, שמירה מפעילה את השינוי מיד.{% else %}אחרי השמירה השינוי נשלח לאישור מנהל. עד אז הגרסה הפעילה ממשיכה לרוץ בלי שינוי.{% endif %}
+  שמירה מפעילה את השינוי מיד.
   הקוד צריך להגדיר <code>app = Flask(__name__)</code> (או Blueprint בשם <code>bp</code>).
 </div>
 
@@ -465,7 +493,7 @@ EDIT = """{% extends 'service.html' %}
     <form method="post" action="{{ url_for('sync_route', route_id=route.id) }}" class="m-0">__CSRF__<button class="btn btn-sm btn-outline-primary js-load">משוך גרסה עדכנית מ-GitHub</button></form>
     {% endif %}
   </div>
-  <div class="form-text mt-1">גרסה חדשה שנמשכת מהריפו עוברת את אותו אישור מנהל כמו כל שינוי קוד.</div>
+  <div class="form-text mt-1">גרסה חדשה שנמשכת מהריפו מופעלת מיד.</div>
 </div>
 {% endif %}
 
@@ -609,7 +637,7 @@ NEW = """{% extends 'base.html' %}
 <div class="mx-auto" style="max-width:780px">
   <div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span>שרת חדש</span></div>
   <h4 class="fw-semibold mb-1">שרת חדש</h4>
-  <div class="text-muted mb-4">מדביקים קוד Python או מייבאים מ-GitHub. מנהל מאשר, והשרת עולה בכתובת משלו.</div>
+  <div class="text-muted mb-4">מדביקים קוד Python או מייבאים מ-GitHub, והשרת עולה מיד בכתובת משלו.</div>
 <div class="card p-4">
       <h5 class="mb-3">שרת חדש</h5>
       <form method="post" action="{{ url_for('deploy_server') }}">
@@ -673,7 +701,7 @@ NEW = """{% extends 'base.html' %}
           <textarea name="code" id="code" class="form-control ltr code" rows="10" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
           <div id="codeCount" class="form-text mb-3 text-end"></div>
         </div>
-        <button type="submit" class="btn btn-primary px-4 js-load">שלח לפריסה</button>
+        <button type="submit" class="btn btn-primary px-4 js-load">פרוס שרת</button>
       </form>
     </div>
 </div>
@@ -792,7 +820,7 @@ SERVICE = """{% extends 'base.html' %}
         <span class="chip">Web Service</span><span class="chip">Python 3</span>
         <span class="d-inline-flex align-items-center gap-1">
           <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
-          {% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}ממתין לאישור{% endif %}
+          {% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}
         </span>
         {% if route.status == 'active' %}<a href="{{ route.full_path }}" target="_blank" rel="noopener" class="ltr text-muted text-decoration-none">{{ request.host_url.rstrip('/') }}{{ route.full_path }}</a>{% else %}<span class="ltr text-muted">{{ route.full_path }}</span>{% endif %}
       </div>
@@ -811,6 +839,196 @@ SERVICE = """{% extends 'base.html' %}
 </div>
 {% endblock %}"""
 
+
+LANDING = """{% extends 'base.html' %}
+{% block title %}דף הבית{% endblock %}
+{% block content %}
+<header class="d-flex justify-content-between align-items-center py-3 mb-3">
+  <div class="d-flex align-items-center gap-2 fw-bold"><span class="brand-mark brand-sm">SH</span><span>מערכת שרתים</span></div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('login_page') }}" class="btn btn-outline-secondary btn-sm">התחברות</a>
+    <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary btn-sm">הרשמה</a>
+  </div>
+</header>
+
+<section class="hero text-center py-5 mx-auto" style="max-width:740px">
+  <h1 class="fw-bold mb-3">מדביקים קוד, ומקבלים שרת באינטרנט</h1>
+  <p class="text-muted fs-5 mb-4">כל שרת עולה בכתובת משלו, בצורה <span class="ltr d-inline-block">/שם_משתמש/שם_שרת</span>. בלי להקים תשתית ובלי להתעסק בפריסה.</p>
+  <div class="d-flex justify-content-center gap-2 flex-wrap">
+    <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary px-4 py-2">יצירת חשבון</a>
+    <a href="{{ url_for('login_page') }}" class="btn btn-outline-secondary px-4 py-2">כבר יש לי חשבון</a>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h4 class="fw-semibold text-center mb-4">איך זה עובד</h4>
+  <div class="row g-3">
+    <div class="col-md-4"><div class="card p-4 feat"><span class="step-num mb-3">1</span><h6>נרשמים</h6><div class="text-muted small">פותחים חשבון עם שם משתמש וסיסמה{% if google_enabled %}, או נכנסים עם Google{% endif %}. מנהל המערכת מאשר כל חשבון חדש.</div></div></div>
+    <div class="col-md-4"><div class="card p-4 feat"><span class="step-num mb-3">2</span><h6>מדביקים קוד או מייבאים מ-GitHub</h6><div class="text-muted small">אפליקציית Flask רגילה, קובץ בודד או ריפו שלם.</div></div></div>
+    <div class="col-md-4"><div class="card p-4 feat"><span class="step-num mb-3">3</span><h6>השרת עולה מיד</h6><div class="text-muted small">אחרי שהחשבון אושר, אין אישור נוסף לכל שרת. מקבלים כתובת ועובדים איתה.</div></div></div>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h4 class="fw-semibold text-center mb-4">מה יש במערכת</h4>
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">Py</span><h6>Python ישירות</h6><div class="text-muted small">קוד Flask רץ כמו שהוא, בלי שינוי ובלי AI.</div></div></div>
+    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">AI</span><h6>תרגום משפות אחרות</h6><div class="text-muted small">PHP, JavaScript, Java, Go, Ruby ו-C# מתורגמים ל-Flask בעזרת Anthropic, OpenAI או Gemini. נדרש מפתח API משלך.</div></div></div>
+    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">GH</span><h6>ייבוא מ-GitHub</h6><div class="text-muted small">קובץ בודד או ריפו שלם, כולל ריפו פרטי עם טוקן קריאה בלבד, ומשיכת גרסה עדכנית בלחיצה.</div></div></div>
+    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">&#9998;</span><h6>עורך קוד באתר</h6><div class="text-muted small">עורכים את הקוד בדפדפן, או מבקשים מה-AI שינוי ורואים מה השתנה לפני השמירה.</div></div></div>
+    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">&#128274;</span><h6>משתני סביבה מוצפנים</h6><div class="text-muted small">מפתחות וסיסמאות נשמרים מוצפנים, ולא מוצגים אחרי השמירה.</div></div></div>
+    <div class="col-md-6 col-lg-4"><div class="card p-4 feat"><span class="fi">&#9776;</span><h6>יומנים</h6><div class="text-muted small">הבקשות האחרונות לכל שרת, עם רענון אוטומטי.</div></div></div>
+  </div>
+</section>
+
+<section class="mb-5">
+  <div class="card p-4 mx-auto" style="max-width:740px;border-inline-start:3px solid var(--brand)">
+    <h6 class="mb-1">כללי הכניסה</h6>
+    <div class="text-muted small">ההרשמה פתוחה, אבל חשבון חדש מתחיל לעבוד רק אחרי שמנהל אישר אותו. עד האישור אפשר להתחבר ולראות דף המתנה. מנהל המערכת יכול לראות את השרתים של כל משתמש, לערוך אותם, למחוק אותם או להשעות את החשבון.</div>
+  </div>
+</section>
+{% endblock %}"""
+
+PENDING = """{% extends 'base.html' %}
+{% block title %}ממתין לאישור{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center pt-5">
+  <div class="card p-4 p-md-5 text-center w-100" style="max-width:480px">
+    <div class="brand-mark" style="background:var(--warn)">&#8987;</div>
+    <h4 class="mb-2">החשבון ממתין לאישור</h4>
+    <p class="text-muted mb-1">שלום <span class="ltr d-inline-block fw-semibold" style="color:var(--text)">{{ current_user.username }}</span>, החשבון נוצר.</p>
+    <p class="text-muted">מנהל המערכת צריך לאשר אותו לפני שאפשר ליצור שרתים. אם הגישה שלך הושעתה, גם זה המסך שתראה. אפשר לרענן את הדף אחרי שהמנהל אישר.</p>
+    <div class="d-flex justify-content-center gap-2 mt-2">
+      <a href="{{ url_for('pending_page') }}" class="btn btn-primary">רענן</a>
+      <form method="post" action="{{ url_for('logout') }}" class="m-0">__CSRF__<button class="btn btn-outline-secondary">התנתק</button></form>
+    </div>
+  </div>
+</div>
+{% endblock %}"""
+
+ADMIN_USERS = """{% extends 'base.html' %}
+{% block title %}משתמשים{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h4 class="mb-0 fw-semibold">משתמשים</h4>
+  <span class="text-muted small">{{ users|length }} משתמשים</span>
+</div>
+<div class="d-flex gap-2 flex-wrap mb-3">
+  <input type="search" id="usrSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש לפי שם או מייל...">
+  <select id="usrFilter" class="form-select form-select-sm" style="width:auto">
+    <option value="">כולם</option><option value="pending">ממתינים לאישור</option><option value="approved">מאושרים</option><option value="admin">מנהלים</option>
+  </select>
+</div>
+<div class="tbl mb-5" id="usrList">
+  <div class="tbl-head usr-row"><div>משתמש</div><div class="c-hide">סטטוס</div><div class="c-hide">שרתים</div><div class="c-hide">נרשם</div><div></div></div>
+  {% for u in users %}
+  <div class="usr-row srv" data-name="{{ u.username }} {{ u.email or '' }}" data-status="{% if u.is_admin %}admin{% elif u.is_approved %}approved{% else %}pending{% endif %}">
+    <div style="min-width:0">
+      <a href="{{ url_for('admin_user', user_id=u.id) }}" class="srv-name ltr d-inline-block">{{ u.username }}</a>
+      <div class="srv-url text-truncate">{% if u.email %}<span class="ltr d-inline-block">{{ u.email }}</span>{% else %}חשבון סיסמה{% endif %}</div>
+    </div>
+    <div class="c-hide d-flex align-items-center gap-2">
+      <span class="dot {% if u.is_approved or u.is_admin %}dot-ok{% else %}dot-warn{% endif %}"></span>
+      <span>{% if u.is_admin %}מנהל{% elif u.is_approved %}מאושר{% else %}ממתין לאישור{% endif %}</span>
+    </div>
+    <div class="c-hide text-muted">{{ counts.get(u.id, 0) }}</div>
+    <div class="c-hide text-muted">{{ u.created_at|timeago }}</div>
+    <div class="srv-actions justify-content-end">
+      {% if not u.is_approved and not u.is_admin %}
+      <form method="post" action="{{ url_for('approve_user', user_id=u.id) }}">__CSRF__<button class="btn btn-sm btn-success">אשר</button></form>
+      {% endif %}
+      <a href="{{ url_for('admin_user', user_id=u.id) }}" class="btn btn-sm btn-outline-secondary">פרטים</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div id="usrNone" class="empty mb-5 d-none">לא נמצאו משתמשים.</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var q=document.getElementById('usrSearch'), f=document.getElementById('usrFilter');
+  function filt(){
+    var t=q.value.trim().toLowerCase(), st=f.value, shown=0;
+    document.querySelectorAll('#usrList .srv').forEach(function(r){
+      var ok=(!t||r.dataset.name.toLowerCase().indexOf(t)>-1)&&(!st||r.dataset.status===st);
+      r.classList.toggle('d-none',!ok); if(ok) shown++;
+    });
+    document.getElementById('usrNone').classList.toggle('d-none',shown>0);
+  }
+  q.addEventListener('input',filt); f.addEventListener('change',filt);
+})();
+</script>
+{% endblock %}"""
+
+ADMIN_USER = """{% extends 'base.html' %}
+{% block title %}{{ target.username }}{% endblock %}
+{% block content %}
+<div class="crumbs mb-2"><a href="{{ url_for('admin_users') }}">משתמשים</a> <span>/</span> <span class="ltr d-inline-block">{{ target.username }}</span></div>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h4 class="fw-semibold ltr mb-1">{{ target.username }}</h4>
+    <div class="d-flex gap-2 align-items-center flex-wrap small text-muted">
+      <span class="d-inline-flex align-items-center gap-1">
+        <span class="dot {% if target.is_approved or target.is_admin %}dot-ok{% else %}dot-warn{% endif %}"></span>
+        {% if target.is_admin %}מנהל{% elif target.is_approved %}מאושר{% else %}ממתין לאישור{% endif %}
+      </span>
+      <span>·</span>
+      <span>{% if target.email %}<span class="ltr d-inline-block">{{ target.email }}</span>{% else %}נרשם עם סיסמה{% endif %}</span>
+      <span>·</span><span>נרשם {{ target.created_at|timeago }}</span>
+    </div>
+  </div>
+  <div class="srv-actions">
+    {% if not target.is_approved and not target.is_admin %}
+    <form method="post" action="{{ url_for('approve_user', user_id=target.id) }}">__CSRF__<input type="hidden" name="back" value="user"><button class="btn btn-success btn-sm">אשר משתמש</button></form>
+    {% endif %}
+    {% if target.is_approved and not target.is_admin %}
+    <form method="post" action="{{ url_for('suspend_user', user_id=target.id) }}" data-confirm="להשעות את {{ target.username }}? השרתים שלו יפסיקו להיות מוגשים עד שתאשר אותו שוב.">__CSRF__<input type="hidden" name="back" value="user"><button class="btn btn-outline-secondary btn-sm">השעה</button></form>
+    {% endif %}
+    {% if not target.is_admin %}
+    <form method="post" action="{{ url_for('delete_user', user_id=target.id) }}" data-confirm="למחוק את המשתמש {{ target.username }} ואת כל השרתים שלו לצמיתות? אי אפשר לשחזר.">__CSRF__<button class="btn btn-outline-danger btn-sm">מחק משתמש</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<h5 class="fw-semibold mb-3">שרתים של המשתמש <span class="text-muted fs-6">({{ routes|length }})</span></h5>
+{% if routes %}
+<div class="tbl mb-5">
+  <div class="tbl-head srv-row"><div>שם</div><div>סטטוס</div><div class="c-runtime">סביבת הרצה</div><div class="c-upd">עודכן</div><div></div></div>
+  {% for route in routes %}
+  {% set is_bundle = (route.live_code or route.pending_code or '').startswith('{"bundle"') %}
+  <div class="srv-row srv position-relative">
+    <div class="d-flex align-items-center gap-3" style="min-width:0">
+      <span class="svc-ico">Py</span>
+      <div style="min-width:0">
+        {% if route.live_code or route.pending_code %}<a href="{{ url_for('edit_route', route_id=route.id) }}" class="srv-name stretched-link">{{ route.route_name }}</a>{% else %}<span class="srv-name">{{ route.route_name }}</span>{% endif %}
+        <div class="srv-url ltr text-truncate">{{ route.full_path }}</div>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
+      <span>{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span>
+    </div>
+    <div class="c-runtime text-muted">Python 3{% if route.source %} · GitHub{% endif %}{% if is_bundle %} · כמה קבצים{% endif %}</div>
+    <div class="c-upd text-muted">{{ route.updated_at|timeago }}</div>
+    <div class="dropdown position-relative" style="z-index:3">
+      <button type="button" class="kebab" data-bs-toggle="dropdown" aria-expanded="false" aria-label="פעולות">&#8943;</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        {% if route.status == 'active' and target.is_approved %}<li><a class="dropdown-item" href="{{ route.full_path }}" target="_blank" rel="noopener">פתח את השרת</a></li>{% endif %}
+        {% if route.live_code or route.pending_code %}<li><a class="dropdown-item" href="{{ url_for('edit_route', route_id=route.id) }}">צפה / ערוך קוד</a></li>{% endif %}
+        <li><a class="dropdown-item" href="{{ url_for('view_logs', route_id=route.id) }}">יומנים</a></li>
+        <li><hr class="dropdown-divider" style="border-color:var(--border)"></li>
+        <li><form method="post" action="{{ url_for('delete_route', route_id=route.id) }}" data-confirm="למחוק את השרת {{ route.full_path }} לצמיתות? אי אפשר לשחזר.">__CSRF__<button class="dropdown-item" style="color:var(--bad)">מחק שרת</button></form></li>
+      </ul>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty mb-5">למשתמש הזה אין עדיין שרתים.</div>
+{% endif %}
+{% endblock %}"""
+
 TEMPLATES = {
     "base.html": BASE,
     "edit.html": EDIT,
@@ -822,5 +1040,9 @@ TEMPLATES = {
     "service.html": SERVICE,
     "review.html": REVIEW,
     "logs.html": LOGS,
+    "landing.html": LANDING,
+    "pending.html": PENDING,
+    "admin_users.html": ADMIN_USERS,
+    "admin_user.html": ADMIN_USER,
 }
 TEMPLATES = {name: tpl.replace("__CSRF__", CSRF) for name, tpl in TEMPLATES.items()}
