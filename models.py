@@ -56,6 +56,8 @@ class Route(db.Model):
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     logs = db.relationship("Log", backref="route", lazy=True, cascade="all, delete-orphan")
+    source = db.relationship("RouteSource", backref="route", uselist=False, cascade="all, delete-orphan")
+    env_vars = db.relationship("EnvVar", backref="route", lazy=True, cascade="all, delete-orphan")
 
 
 class Log(db.Model):
@@ -65,3 +67,30 @@ class Log(db.Model):
     route_id = db.Column(db.Integer, db.ForeignKey("routes.id"), nullable=False, index=True)
     timestamp = db.Column(db.DateTime, default=utcnow)
     message = db.Column(db.Text, nullable=False)
+
+
+class RouteSource(db.Model):
+    """מאיפה הקוד של שרת יובא ב-GitHub (קובץ בודד). טבלה נפרדת, כדי לא לשנות טבלאות קיימות."""
+
+    __tablename__ = "route_sources"
+
+    id = db.Column(db.Integer, primary_key=True)
+    route_id = db.Column(db.Integer, db.ForeignKey("routes.id"), unique=True, nullable=False)
+    repo = db.Column(db.String(210), nullable=False)  # owner/repo
+    path = db.Column(db.String(300), nullable=False)
+    ref = db.Column(db.String(100), default="", nullable=False)  # ענף/תג; ריק = ברירת המחדל של הריפו
+    sha = db.Column(db.String(64), default="", nullable=False)  # מזהה הקובץ בגרסה האחרונה שנמשכה
+    synced_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+
+class EnvVar(db.Model):
+    """משתנה סביבה של שרת וירטואלי אחד. הערך נשמר מוצפן."""
+
+    __tablename__ = "env_vars"
+    __table_args__ = (db.UniqueConstraint("route_id", "name", name="uq_route_envname"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    route_id = db.Column(db.Integer, db.ForeignKey("routes.id"), nullable=False, index=True)
+    name = db.Column(db.String(64), nullable=False)
+    encrypted_value = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
