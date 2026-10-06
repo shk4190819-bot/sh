@@ -897,6 +897,7 @@ def dispatch(username, route_name, rest):
         strip_admin_cookie_from_request(environ)
         response = Response.from_app(sub, environ, buffered=True)
         strip_admin_cookie_from_response(response)
+        response.headers["X-Content-Type-Options"] = "nosniff"
     except Exception:
         app.logger.exception("Sub-server failed: %s", route.full_path)
         record_log(route.id, f"Method: {request.method} | Status: 502 | IP: {request.remote_addr} | load/run error")
