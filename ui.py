@@ -13,7 +13,7 @@ BASE = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <style>
-:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f6f6f8;--panel:#ffffff;--panel-2:#f0f0f4;--border:#e2e3e9;--text:#14151a;--muted:#6b6f7b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626}
+:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f6f6f8;--panel:#ffffff;--panel-2:#f0f0f4;--border:#e2e3e9;--text:#14151a;--muted:#6b6f7b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r:10px;--r-lg:14px;--ok-bg:color-mix(in srgb,var(--ok) 14%,transparent);--warn-bg:color-mix(in srgb,var(--warn) 14%,transparent);--bad-bg:color-mix(in srgb,var(--bad) 14%,transparent)}
 [data-bs-theme=dark]{--brand:#7377ff;--brand-d:#8a8dff;--bg:#0c0d10;--panel:#131418;--panel-2:#1b1c22;--border:#272930;--text:#e7e8ec;--muted:#8b8f9b;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
 body{font-family:'Heebo',system-ui,sans-serif;background:var(--bg);color:var(--text);--bs-body-bg:var(--bg);--bs-body-color:var(--text);--bs-border-color:var(--border);--bs-secondary-color:var(--muted);--bs-tertiary-bg:var(--panel-2);--bs-emphasis-color:var(--text)}
 .text-muted{color:var(--muted)!important}
@@ -23,6 +23,8 @@ a{color:var(--brand)}a:hover{color:var(--brand-d)}
 .btn-primary{--bs-btn-bg:var(--brand);--bs-btn-border-color:var(--brand);--bs-btn-color:#fff;--bs-btn-hover-bg:var(--brand-d);--bs-btn-hover-border-color:var(--brand-d);--bs-btn-hover-color:#fff;--bs-btn-active-bg:var(--brand-d);--bs-btn-active-border-color:var(--brand-d);--bs-btn-disabled-bg:var(--brand);--bs-btn-disabled-border-color:var(--brand)}
 .btn-outline-primary{--bs-btn-color:var(--brand);--bs-btn-border-color:var(--border);--bs-btn-hover-bg:var(--panel-2);--bs-btn-hover-color:var(--brand);--bs-btn-hover-border-color:var(--brand);--bs-btn-active-bg:var(--panel-2);--bs-btn-active-color:var(--brand)}
 .btn-outline-secondary{--bs-btn-color:var(--text);--bs-btn-border-color:var(--border);--bs-btn-hover-bg:var(--panel-2);--bs-btn-hover-color:var(--text);--bs-btn-hover-border-color:var(--muted);--bs-btn-active-bg:var(--panel-2);--bs-btn-active-color:var(--text)}
+.btn-success{--bs-btn-bg:var(--ok);--bs-btn-border-color:var(--ok);--bs-btn-color:#04210f;--bs-btn-hover-bg:color-mix(in srgb,var(--ok) 85%,#000);--bs-btn-hover-border-color:color-mix(in srgb,var(--ok) 85%,#000);--bs-btn-hover-color:#04210f;--bs-btn-active-bg:color-mix(in srgb,var(--ok) 80%,#000);--bs-btn-active-color:#04210f}
+.btn-warning{--bs-btn-bg:var(--warn);--bs-btn-border-color:var(--warn);--bs-btn-color:#2a1700;--bs-btn-hover-bg:color-mix(in srgb,var(--warn) 85%,#000);--bs-btn-hover-border-color:color-mix(in srgb,var(--warn) 85%,#000);--bs-btn-hover-color:#2a1700;--bs-btn-active-bg:color-mix(in srgb,var(--warn) 80%,#000);--bs-btn-active-color:#2a1700}
 .btn-outline-danger{--bs-btn-color:var(--bad);--bs-btn-border-color:var(--border);--bs-btn-hover-bg:var(--bad);--bs-btn-hover-border-color:var(--bad);--bs-btn-hover-color:#fff}
 .form-control,.form-select{background-color:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)}
 .form-control:focus,.form-select:focus{background-color:var(--bg);color:var(--text);border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 25%,transparent)}
@@ -43,13 +45,16 @@ a{color:var(--brand)}a:hover{color:var(--brand-d)}
 textarea.code{background:var(--bg)}
 details>summary{cursor:pointer;color:var(--muted)}
 /* סרגל עליון */
-.topbar{background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
-.topbar .inner{height:56px}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar .inner{min-height:56px;display:flex;align-items:center;gap:.5rem 1rem;flex-wrap:wrap}
+.topbar .tb-brand{display:flex;align-items:center;gap:.5rem;text-decoration:none;font-weight:700;color:var(--text)}
+.topbar .tb-actions{display:flex;align-items:center;gap:.5rem;margin-inline-start:auto}
+.topnav{display:flex;gap:.25rem}
 .brand-mark{width:56px;height:56px;border-radius:14px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;margin:0 auto 14px}
 .brand-sm{width:28px;height:28px;font-size:12px;border-radius:7px;margin:0}
-.topnav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:.35rem .7rem;border-radius:6px}
+.topnav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:.35rem .7rem;border-radius:var(--r-sm);white-space:nowrap}
 .topnav a:hover,.topnav a.on{color:var(--text);background:var(--panel-2)}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .step-num{width:26px;height:26px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.8rem;flex:none}
 /* רשימת שרתים בסגנון Render */
 .srv-list{border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow:hidden}
@@ -68,14 +73,14 @@ details>summary{cursor:pointer;color:var(--muted)}
 .srv-actions{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
 .srv-actions form{margin:0}
 .empty{border:1px dashed var(--border);border-radius:10px;padding:2rem;text-align:center;color:var(--muted)}
-#deploy,.scroll-target{scroll-margin-top:76px}
-.diff{background:#14151c;color:#cdd6f4;white-space:pre-wrap;overflow:auto;max-height:50vh;border:1px solid var(--border)}
+#deploy,.scroll-target{scroll-margin-top:calc(var(--tb-h,56px) + 72px)}
+.diff{background:var(--panel-2);color:var(--text);white-space:pre-wrap;overflow:auto;max-height:40vh;border:1px solid var(--border);font-size:.8rem}
 .diff span{display:block}
-.d-add{background:rgba(46,160,67,.28)}.d-del{background:rgba(248,81,73,.28)}.d-hunk{color:#89b4fa}
+.d-add{background:color-mix(in srgb,var(--ok) 18%,transparent)}.d-del{background:color-mix(in srgb,var(--bad) 18%,transparent)}.d-hunk{color:var(--brand)}
 .url-chip{background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:.85rem;word-break:break-all;color:var(--text)}
-.log-row.s-err td{color:var(--bad)!important}
 /* טבלת שרתים בסגנון Render */
-.tbl{border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow:hidden}
+.tbl{border:1px solid var(--border);border-radius:var(--r);background:var(--panel)}
+.tbl>:first-child{border-radius:var(--r) var(--r) 0 0}.tbl>:last-child{border-radius:0 0 var(--r) var(--r)}
 .srv-row{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1fr) 40px;align-items:center;gap:1rem;padding:.8rem 1.1rem}
 .tbl-head{color:var(--muted);font-size:.78rem;font-weight:500;border-bottom:1px solid var(--border);padding-top:.6rem;padding-bottom:.6rem;background:var(--panel)}
 .tbl .srv{border-bottom:1px solid var(--border);font-size:.9rem}
@@ -84,16 +89,84 @@ details>summary{cursor:pointer;color:var(--muted)}
 .svc-ico{width:34px;height:34px;border-radius:8px;background:color-mix(in srgb,var(--brand) 18%,var(--panel-2));border:1px solid var(--border);color:var(--brand);font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .svc-ico-lg{width:44px;height:44px;border-radius:10px;font-size:.95rem}
 .srv-url{color:var(--muted);font-size:.78rem}
-.kebab{background:transparent;border:1px solid transparent;color:var(--muted);border-radius:6px;width:32px;height:32px;font-size:1.2rem;line-height:1}
+.srv.is-open{z-index:5}
+.tbl .dropdown-menu{min-width:11rem;box-shadow:0 12px 32px -12px rgba(0,0,0,.45)}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+.page-head h1{font-size:1.5rem;font-weight:700;margin:0;line-height:1.2}.page-head .sub{color:var(--muted);font-size:.85rem;margin-top:.2rem}
+.toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem}.toolbar .count{margin-inline-start:auto;color:var(--muted);font-size:.82rem}
+.st{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:500;border-radius:999px;padding:.12rem .6rem;border:1px solid transparent;white-space:nowrap}
+.st::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.st-ok{color:var(--ok);background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.st-warn{color:var(--warn);background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+.st-bad{color:var(--bad);background:var(--bad-bg);border-color:color-mix(in srgb,var(--bad) 30%,transparent)}
+.attn{border:1px solid var(--border);border-inline-start:3px solid var(--warn);border-radius:var(--r);background:var(--panel);margin-bottom:.75rem}
+.attn-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.55rem .9rem;font-size:.88rem;font-weight:600}
+.attn-head .more{font-weight:400;font-size:.8rem}
+.attn-body{max-height:190px;overflow:auto;border-top:1px solid var(--border)}
+.attn-row{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.4rem .9rem;font-size:.85rem;border-bottom:1px solid var(--border)}.attn-row:last-child{border-bottom:0}
+.attn-row .btn{--bs-btn-padding-y:.1rem;--bs-btn-padding-x:.55rem;--bs-btn-font-size:.78rem}
+.empty .em-ico{width:48px;height:48px;border-radius:12px;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--panel-2));border:1px solid var(--border)}
+.notice{display:flex;gap:.6rem;align-items:flex-start;padding:.5rem .8rem;border-radius:var(--r);border:1px solid var(--border);background:var(--panel-2);color:var(--muted);font-size:.84rem;margin-bottom:.75rem}
+.notice-warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn) 35%,transparent);color:var(--text)}
+.notice-info{background:color-mix(in srgb,var(--brand) 10%,transparent);border-color:color-mix(in srgb,var(--brand) 30%,transparent);color:var(--text)}
+.notice .grow{flex:1;min-width:0}
+.sec{display:flex;gap:.75rem;align-items:center;margin:1.4rem 0 .8rem;font-weight:600;font-size:.95rem}.sec:first-child{margin-top:0}
+.url-preview{display:flex;align-items:center;gap:.1rem;direction:ltr;margin-top:.5rem;padding:.55rem .8rem;border:1px solid var(--border);border-radius:var(--r);background:var(--panel-2);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9rem;word-break:break-all}
+.url-preview .up-host{color:var(--muted)}.url-preview .up-name{color:var(--text);font-weight:600}
+.url-preview.is-empty .up-name{color:var(--muted);font-weight:400;opacity:.7}
+.url-preview.is-bad{border-color:var(--bad);background:var(--bad-bg)}
+.form-actions{position:sticky;bottom:0;z-index:10;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:1.5rem -1.5rem -1.5rem;padding:.8rem 1.5rem;border-top:1px solid var(--border);background:var(--panel);border-radius:0 0 var(--r) var(--r)}
+.actionbar{position:sticky;top:calc(var(--tb-h,56px) + 8px);z-index:15;display:flex;gap:.5rem .75rem;align-items:center;flex-wrap:wrap;padding:.55rem .75rem;margin-bottom:.75rem;border:1px solid var(--border);border-radius:var(--r);background:var(--panel)}
+.actionbar .spacer{flex:1}.actionbar .hint{color:var(--muted);font-size:.78rem}
+.save-state{font-size:.78rem}
+.editor{min-height:clamp(320px,60vh,720px);line-height:1.55;font-size:.86rem;tab-size:4;resize:vertical}
+.panel{border:1px solid var(--border);border-radius:var(--r);background:var(--panel);margin-top:.75rem}
+.panel>summary{list-style:none;padding:.65rem .9rem;font-weight:600;font-size:.9rem;color:var(--text);display:flex;align-items:center;gap:.5rem}
+.panel>summary::-webkit-details-marker{display:none}
+.panel>summary::after{content:'\\25BE';margin-inline-start:auto;color:var(--muted);transition:transform .15s}
+.panel[open]>summary::after{transform:rotate(180deg)}
+.panel-body{padding:0 .9rem .9rem}
+@media (max-width:640px){.actionbar .hint{display:none}.form-actions{margin-inline:-1rem;padding-inline:1rem}}
+.st-mute{color:var(--muted);background:var(--panel-2);border-color:var(--border)}
+.st-info{color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,transparent);border-color:color-mix(in srgb,var(--brand) 30%,transparent)}
+.code-view{direction:ltr;text-align:left;background:var(--panel-2);color:var(--text);white-space:pre-wrap;overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;margin:0;font-size:.82rem}
+.log-list{border:1px solid var(--border);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.log-head,.log-row{display:grid;grid-template-columns:165px 64px 72px minmax(0,1fr);gap:.75rem;align-items:center;padding:.5rem .9rem}
+.log-head{color:var(--muted);font-size:.78rem;font-weight:500;border-bottom:1px solid var(--border)}
+.log-row{border-bottom:1px solid var(--border);border-inline-start:3px solid transparent;font-size:.85rem}
+.log-row:last-child{border-bottom:0}
+.log-row.is-4{border-inline-start-color:var(--warn);background:var(--warn-bg)}
+.log-row.is-5{border-inline-start-color:var(--bad);background:var(--bad-bg)}
+.log-time,.log-method,.log-meta{direction:ltr;text-align:left}
+.log-time{font-variant-numeric:tabular-nums;white-space:nowrap}
+.log-method{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem;font-weight:600}
+.log-meta{color:var(--muted);min-width:0;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem}
+@media (max-width:640px){
+  .log-head{display:none}
+  .log-row{grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"st m t" "meta meta meta";gap:.3rem .6rem}
+  .log-st{grid-area:st}.log-method{grid-area:m}.log-time{grid-area:t;text-align:end;direction:ltr;font-size:.78rem;color:var(--muted)}.log-meta{grid-area:meta}
+}
+.acct{padding:1.25rem 1.4rem;margin-bottom:1rem}
+.acct-head{display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem}
+.acct-head .grow{flex:1;min-width:0}.acct-head h2{font-size:1.05rem;font-weight:600;margin:0}.acct-head p{margin:.15rem 0 0;color:var(--muted);font-size:.84rem}
+.acct-row{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.6rem 0;border-bottom:1px solid var(--border)}
+.acct-row:last-of-type{border-bottom:0}
+.acct-add{margin-top:.9rem;padding-top:1rem;border-top:1px solid var(--border)}
+.usr-row[data-status=pending]{border-inline-start:3px solid var(--warn);padding-inline-start:calc(1.1rem - 3px)}
+.kebab{background:transparent;border:1px solid transparent;color:var(--muted);border-radius:var(--r-sm);width:36px;height:36px;font-size:1.2rem;line-height:1}
 .kebab:hover,.kebab[aria-expanded=true]{background:var(--panel-2);border-color:var(--border);color:var(--text)}
 .crumbs{font-size:.85rem;color:var(--muted)}.crumbs a{color:var(--muted);text-decoration:none}.crumbs a:hover{color:var(--text)}
 /* עמוד שרת: סרגל צד */
 .svc-layout{display:grid;grid-template-columns:200px minmax(0,1fr);gap:2rem;border-top:1px solid var(--border);padding-top:1.5rem}
-.svc-nav{display:flex;flex-direction:column;gap:2px;position:sticky;top:76px;align-self:start}
+.svc-nav{display:flex;flex-direction:column;gap:2px;position:sticky;top:calc(var(--tb-h,56px) + 16px);align-self:start}
 .svc-nav-title{font-size:.72rem;color:var(--muted);font-weight:600;padding:.2rem .7rem;margin-bottom:.2rem}
 .svc-nav a{color:var(--muted);text-decoration:none;font-size:.9rem;padding:.42rem .7rem;border-radius:6px}
 .svc-nav a:hover{background:var(--panel-2);color:var(--text)}
 .svc-nav a.on{background:var(--panel-2);color:var(--text);font-weight:600}
+@media (max-width:640px){
+  .topbar .inner{padding-block:.5rem}.topnav{order:3;flex:0 0 100%;overflow-x:auto;margin-inline:-.25rem;padding-bottom:.15rem}
+  .toolbar #srvSearch{max-width:none!important;flex:1 1 100%}
+}
 @media (max-width:820px){
   .srv-row{grid-template-columns:minmax(0,1fr) auto 40px}.c-runtime,.c-upd,.tbl-head{display:none}
   .svc-layout{grid-template-columns:1fr;gap:1rem}
@@ -154,18 +227,14 @@ details>summary{cursor:pointer;color:var(--muted)}
 </head>
 <body>
 {% if current_user and (current_user.is_approved or current_user.is_admin) %}
-<header class="topbar mb-4"><div class="container inner d-flex justify-content-between align-items-center" style="max-width:1180px">
-  <div class="d-flex align-items-center gap-3">
-    <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none fw-bold" style="color:var(--text)">
-      <span class="brand-mark brand-sm">SH</span><span class="d-none d-sm-inline">מערכת שרתים</span>
-    </a>
-    <nav class="topnav d-flex gap-1">
-      <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs') %}on{% endif %}">שרתים</a>
-      {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}">משתמשים{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
-      <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}">הגדרות חשבון</a>
-    </nav>
-  </div>
-  <div class="d-flex align-items-center gap-2">
+<header class="topbar mb-4"><div class="container inner" style="max-width:1180px">
+  <a href="{{ url_for('index') }}" class="tb-brand"><span class="brand-mark brand-sm">SH</span><span class="d-none d-sm-inline">מערכת שרתים</span></a>
+  <nav class="topnav" aria-label="ניווט ראשי">
+    <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %}on{% endif %}"{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %} aria-current="page"{% endif %}>שרתים</a>
+    {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}"{% if request.endpoint in ('admin_users','admin_user') %} aria-current="page"{% endif %}>משתמשים{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
+    <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}"{% if request.endpoint == 'account' %} aria-current="page"{% endif %}>הגדרות חשבון</a>
+  </nav>
+  <div class="tb-actions">
     <div class="dropdown">
       <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="dropdown" aria-expanded="false">חדש +</button>
       <ul class="dropdown-menu dropdown-menu-end" style="min-width:230px">
@@ -195,6 +264,9 @@ details>summary{cursor:pointer;color:var(--muted)}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+(function(){var tb=document.querySelector('.topbar');if(!tb)return;function h(){document.documentElement.style.setProperty('--tb-h',tb.offsetHeight+'px');}h();window.addEventListener('resize',h);})();
+document.addEventListener('show.bs.dropdown',function(e){var r=e.target.closest('.srv');if(r)r.classList.add('is-open');});
+document.addEventListener('hidden.bs.dropdown',function(e){var r=e.target.closest('.srv');if(r)r.classList.remove('is-open');});
 document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){
   if(!confirm(f.dataset.confirm)){e.preventDefault();e.stopImmediatePropagation();}
 });});
@@ -294,16 +366,24 @@ ERROR = """{% extends 'base.html' %}
 DASHBOARD = """{% extends 'base.html' %}
 {% block title %}שרתים{% endblock %}
 {% block content %}
+<div class="page-head">
+  <div>
+    <h1>שרתים</h1>
+    <div class="sub">{% if current_user.is_admin %}{{ active_count }} שרתים פעילים · {{ users_count }} משתמשים · <a href="{{ url_for('admin_users') }}">ניהול משתמשים</a>{% else %}{{ routes|length }} שרתים{% endif %}</div>
+  </div>
+  <a href="{{ url_for('new_server') }}" class="btn btn-primary btn-sm">שרת חדש +</a>
+</div>
 {% if current_user.is_admin %}
 {% if pending_users %}
-<div class="card p-4 mb-4" style="border-inline-start:3px solid var(--warn)">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-    <h5 class="mb-0">משתמשים שממתינים לאישור <span class="badge bg-warning text-dark">{{ pending_users|length }}</span></h5>
-    <a href="{{ url_for('admin_users') }}" class="small">ניהול כל המשתמשים</a>
+<section class="attn" aria-label="משתמשים שממתינים לאישור">
+  <div class="attn-head">
+    <span>משתמשים שממתינים לאישור <span class="badge bg-warning text-dark">{{ pending_users|length }}</span></span>
+    <a href="{{ url_for('admin_users') }}" class="more">כל המשתמשים</a>
   </div>
+  <div class="attn-body">
   {% for u in pending_users %}
-  <div class="d-flex justify-content-between align-items-center py-2 border-top flex-wrap gap-2">
-    <div>
+  <div class="attn-row">
+    <div class="text-truncate" style="min-width:0">
       <a href="{{ url_for('admin_user', user_id=u.id) }}" class="fw-semibold ltr d-inline-block text-decoration-none">{{ u.username }}</a>
       <span class="text-muted small">· {% if u.email %}<span class="ltr d-inline-block">{{ u.email }}</span>{% else %}נרשם עם סיסמה{% endif %} · {{ u.created_at|timeago }}</span>
     </div>
@@ -313,35 +393,35 @@ DASHBOARD = """{% extends 'base.html' %}
     </div>
   </div>
   {% endfor %}
-</div>
+  </div>
+</section>
 {% endif %}
 {% if pending %}
-<div class="card p-4 mb-4" style="border-inline-start:3px solid var(--warn)">
-  <h5 class="mb-2">שרתים ישנים שממתינים לאישור <span class="badge bg-warning text-dark">{{ pending|length }}</span></h5>
-  <div class="text-muted small mb-1">נשלחו לפני המעבר לאישור משתמשים. שרתים חדשים עולים מיד.</div>
+<section class="attn" aria-label="שרתים ישנים שממתינים לאישור">
+  <div class="attn-head">
+    <span>שרתים ישנים שממתינים לאישור <span class="badge bg-warning text-dark">{{ pending|length }}</span></span>
+    <span class="more text-muted">נשלחו לפני המעבר לאישור משתמשים. שרתים חדשים עולים מיד.</span>
+  </div>
+  <div class="attn-body">
   {% for r in pending %}
-  <div class="d-flex justify-content-between align-items-center py-2 border-top flex-wrap gap-2">
-    <div><span class="url-chip ltr d-inline-block">{{ r.full_path }}</span> <span class="text-muted small">{{ r.source_lang }}</span></div>
+  <div class="attn-row">
+    <div class="text-truncate" style="min-width:0"><span class="url-chip ltr d-inline-block">{{ r.full_path }}</span> <span class="text-muted small">{{ r.source_lang }}</span></div>
     <a href="{{ url_for('review_route', route_id=r.id) }}" class="btn btn-sm btn-warning">בדוק ואשר</a>
   </div>
   {% endfor %}
-</div>
+  </div>
+</section>
 {% endif %}
-<div class="text-muted small mb-3">{{ users_count }} משתמשים · {{ active_count }} שרתים פעילים · <a href="{{ url_for('admin_users') }}">ניהול משתמשים</a></div>
 {% endif %}
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0 fw-semibold">שרתים</h4>
-  <a href="{{ url_for('new_server') }}" class="btn btn-primary btn-sm">שרת חדש +</a>
-</div>
-<div class="d-flex gap-2 flex-wrap mb-3">
-  <input type="search" id="srvSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש שרתים...">
-  <select id="srvFilter" class="form-select form-select-sm" style="width:auto">
+{% if routes %}
+<div class="toolbar">
+  <input type="search" id="srvSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש שרתים..." aria-label="חיפוש שרתים">
+  <select id="srvFilter" class="form-select form-select-sm" style="width:auto" aria-label="סינון לפי סטטוס">
     <option value="">כל הסטטוסים</option><option value="active">פעיל</option><option value="pending">לא פעיל</option><option value="rejected">נדחה</option>
   </select>
-  <span class="text-muted small align-self-center ms-auto">{{ routes|length }} שרתים</span>
+  <span class="count" id="srvCount" aria-live="polite">{{ routes|length }} שרתים</span>
 </div>
-{% if routes %}
 <div class="tbl mb-5" id="srvList">
   <div class="tbl-head srv-row"><div>שם</div><div>סטטוס</div><div class="c-runtime">סביבת הרצה</div><div class="c-upd">עודכן</div><div></div></div>
   {% for route in routes %}
@@ -356,14 +436,13 @@ DASHBOARD = """{% extends 'base.html' %}
       </div>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
-      <span>{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span>
+      <span class="st {% if route.status == 'active' %}st-ok{% elif route.status == 'rejected' %}st-bad{% else %}st-warn{% endif %}">{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span>
       {% if route.status == 'active' and route.pending_code %}<span class="chip" style="color:var(--warn)">העדכון האחרון לא עלה</span>{% endif %}
     </div>
     <div class="c-runtime text-muted">Python 3{% if route.source %} · GitHub{% endif %}{% if is_bundle %} · כמה קבצים{% endif %}</div>
     <div class="c-upd text-muted">{{ route.updated_at|timeago }}</div>
     <div class="dropdown position-relative" style="z-index:3">
-      <button type="button" class="kebab" data-bs-toggle="dropdown" aria-expanded="false" aria-label="פעולות">&#8943;</button>
+      <button type="button" class="kebab" data-bs-toggle="dropdown" aria-expanded="false" aria-label="פעולות עבור {{ route.route_name }}">&#8943;</button>
       <ul class="dropdown-menu dropdown-menu-end">
         {% if route.status == 'active' %}
         <li><a class="dropdown-item" href="{{ route.full_path }}" target="_blank" rel="noopener">פתח את השרת</a></li>
@@ -378,9 +457,15 @@ DASHBOARD = """{% extends 'base.html' %}
   </div>
   {% endfor %}
 </div>
-<div id="srvNone" class="empty mb-5 d-none">לא נמצאו שרתים שמתאימים לחיפוש.</div>
+<div id="srvNone" class="empty mb-5 d-none">
+  <div class="em-ico" aria-hidden="true">&#8981;</div>
+  <div class="fw-semibold mb-1" style="color:var(--text)">לא נמצאו שרתים</div>
+  <div class="mb-3">אין שרתים שמתאימים לחיפוש או לסינון.</div>
+  <button type="button" class="btn btn-outline-secondary btn-sm" id="srvReset">נקה סינון</button>
+</div>
 {% else %}
 <div class="empty mb-5">
+  <div class="em-ico" aria-hidden="true">&#9889;</div>
   <div class="fw-semibold mb-1" style="color:var(--text);font-size:1.1rem">עוד אין לך שרתים</div>
   <div class="mb-3">מדביקים קוד או מייבאים ריפו מ-GitHub, ומקבלים כתובת באינטרנט.</div>
   <a href="{{ url_for('new_server') }}" class="btn btn-primary">שרת חדש +</a>
@@ -403,8 +488,11 @@ DASHBOARD = """{% extends 'base.html' %}
       r.classList.toggle('d-none',!ok); if(ok) shown++;
     });
     var none=$('srvNone'); if(none) none.classList.toggle('d-none',shown>0);
+    var l=$('srvList'); if(l) l.classList.toggle('d-none',shown===0);
+    var c=$('srvCount'); if(c) c.textContent=shown+' שרתים';
   }
   if(q){q.addEventListener('input',filt); f.addEventListener('change',filt);}
+  var rs=$('srvReset'); if(rs) rs.addEventListener('click',function(){q.value='';f.value='';filt();q.focus();});
 })();
 </script>
 {% endblock %}"""
@@ -412,90 +500,111 @@ DASHBOARD = """{% extends 'base.html' %}
 REVIEW = """{% extends 'base.html' %}
 {% block title %}בדיקת קוד{% endblock %}
 {% block content %}
-<a href="{{ url_for('index') }}" class="text-decoration-none">&rarr; חזרה ללוח הבקרה</a>
-<h3 class="mt-2">בדיקת קוד</h3>
-<div class="text-muted mb-3">
-  {{ route.owner.username }} · <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span> · שפת מקור: {{ route.source_lang }}
+{% set blocked = libs | selectattr('status', 'equalto', 'blocked') | list %}
+<div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span>בדיקת קוד</span></div>
+<div class="page-head">
+  <div>
+    <h1>בדיקת קוד <span class="st st-warn align-middle fs-6">ממתין לאישור</span></h1>
+    <div class="sub">{{ route.owner.username }} · <span class="url-chip ltr d-inline-block">{{ route.full_path }}</span> · שפת מקור: {{ route.source_lang }}
+    {% if route.source %}<br>מקור: GitHub · <span class="ltr d-inline-block">{{ route.source.repo }}{% if route.source.path %}/{{ route.source.path }}{% endif %}</span> · <span class="ltr d-inline-block">{{ (route.source.sha or '')[:7] }}</span>{% endif %}</div>
+  </div>
 </div>
-{% if route.source %}<div class="text-muted small mb-2">מקור: GitHub · <span class="ltr d-inline-block">{{ route.source.repo }}{% if route.source.path %}/{{ route.source.path }}{% endif %}</span> · <span class="ltr d-inline-block">{{ (route.source.sha or '')[:7] }}</span></div>{% endif %}
-<div class="alert alert-warning">הקוד ירוץ בתוך תהליך השרת. אשר רק אם קראת אותו עד הסוף והוא לא נוגע בסודות, בקבצים או במסד הנתונים.</div>
-<h6 class="mt-3">ספריות חיצוניות</h6>
-<div class="mb-3">
+<div class="actionbar" role="group" aria-label="פעולות בדיקה">
+  <form method="post" action="{{ url_for('approve_route', route_id=route.id) }}" class="m-0">__CSRF__<button class="btn btn-success px-4"{% if blocked %} disabled title="יש ספרייה שלא ברשימה המותרת"{% endif %}>אשר ופרוס</button></form>
+  <form method="post" action="{{ url_for('reject_route', route_id=route.id) }}" class="m-0">__CSRF__<button class="btn btn-outline-danger px-4">דחה</button></form>
+  <span class="spacer"></span>
+  {% if blocked %}<span class="st st-bad">האישור חסום</span>{% endif %}
+</div>
+<div class="notice notice-warn" role="note"><span class="grow">הקוד ירוץ בתוך תהליך השרת. אשר רק אם קראת אותו עד הסוף והוא לא נוגע בסודות, בקבצים או במסד הנתונים.</span></div>
+
+<div class="sec">ספריות חיצוניות</div>
+<div class="d-flex gap-2 flex-wrap">
   {% if libs %}
     {% for lib in libs %}
       {% if lib.status == 'installed' %}
-        <span class="badge text-bg-success me-1 ltr">{{ lib.name }} · מותקנת</span>
+        <span class="st st-ok ltr">{{ lib.name }} · מותקנת</span>
       {% elif lib.status == 'will_install' %}
-        <span class="badge text-bg-warning me-1 ltr">{{ lib.name }} · תותקן באישור ({{ lib.package }})</span>
+        <span class="st st-warn ltr">{{ lib.name }} · תותקן באישור ({{ lib.package }})</span>
       {% else %}
-        <span class="badge text-bg-danger me-1 ltr">{{ lib.name }} · לא מותרת</span>
+        <span class="st st-bad ltr">{{ lib.name }} · לא מותרת</span>
       {% endif %}
     {% endfor %}
-    {% if libs | selectattr('status', 'equalto', 'blocked') | list %}
-      <div class="text-danger small mt-2">יש ספרייה שלא ברשימה המותרת, ולכן האישור חסום. אפשר להוסיף אותה ל-ALLOWED ב-deps.py או במשתנה USER_LIBS_EXTRA ולרענן.</div>
-    {% endif %}
   {% else %}
     <span class="text-muted small">הקוד משתמש רק ב-Flask ובספריית הסטנדרט.</span>
   {% endif %}
 </div>
+{% if blocked %}
+<div class="text-danger small mt-2">יש ספרייה שלא ברשימה המותרת, ולכן האישור חסום. אפשר להוסיף אותה ל-ALLOWED ב-deps.py או במשתנה USER_LIBS_EXTRA ולרענן.</div>
+{% endif %}
+
 {% if bundle %}
-<div class="alert alert-info small">שרת מרובה קבצים · {{ bundle.files|length }} קבצים · קובץ ראשי: <code class="ltr">{{ bundle.entry }}</code></div>
+<div class="notice notice-info mt-3"><span class="grow">שרת מרובה קבצים · {{ bundle.files|length }} קבצים · קובץ ראשי: <code class="ltr">{{ bundle.entry }}</code></span></div>
 {% if bundle.changes is not none %}
-<h6>קבצים ששונו לעומת הגרסה הפעילה ({{ bundle.changes|length }})</h6>
+<div class="sec">קבצים ששונו לעומת הגרסה הפעילה ({{ bundle.changes|length }})</div>
 {% for c in bundle.changes %}
-<details class="mb-2" {% if loop.index <= 3 %}open{% endif %}>
-  <summary class="ltr">{{ c.path }} <span class="badge {% if c.status == 'new' %}bg-success{% elif c.status == 'deleted' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{% if c.status == 'new' %}חדש{% elif c.status == 'deleted' %}נמחק{% else %}שונה{% endif %}</span></summary>
-  <pre class="code ltr p-3 rounded-3 diff">{% for l in c.diff %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
+<details class="panel" {% if loop.index <= 3 %}open{% endif %}>
+  <summary><span class="ltr">{{ c.path }}</span> <span class="st {% if c.status == 'new' %}st-ok{% elif c.status == 'deleted' %}st-bad{% else %}st-warn{% endif %}">{% if c.status == 'new' %}חדש{% elif c.status == 'deleted' %}נמחק{% else %}שונה{% endif %}</span></summary>
+  <div class="panel-body"><pre class="code ltr p-3 rounded-3 diff mb-0">{% for l in c.diff %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre></div>
 </details>
 {% else %}
-<div class="text-muted small mb-2">אין הבדלים לעומת הגרסה הפעילה.</div>
+<div class="text-muted small">אין הבדלים לעומת הגרסה הפעילה.</div>
 {% endfor %}
 {% endif %}
-<h6 class="mt-3">כל הקבצים</h6>
+<div class="sec">כל הקבצים</div>
 {% for path, src in bundle.files.items() %}
-<details class="mb-2"><summary class="ltr">{{ path }}</summary><pre class="code ltr p-3 rounded-3 text-light" style="background:#1e1e2e;white-space:pre-wrap;max-height:50vh;overflow:auto">{{ src }}</pre></details>
+<details class="panel"><summary><span class="ltr">{{ path }}</span></summary><div class="panel-body"><pre class="code code-view">{{ src }}</pre></div></details>
 {% endfor %}
 {% else %}
 {% if diff_lines %}
-<h6>שינויים לעומת הגרסה הפעילה</h6>
+<div class="sec">שינויים לעומת הגרסה הפעילה</div>
 <pre class="code ltr p-3 rounded-3 diff">{% for l in diff_lines %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
 {% elif route.live_code %}
-<div class="text-muted small mb-2">אין הבדלים לעומת הגרסה הפעילה.</div>
+<div class="text-muted small mt-3">אין הבדלים לעומת הגרסה הפעילה.</div>
 {% endif %}
-<h6>הקוד המלא</h6>
-<pre class="code ltr p-3 rounded-3 text-light" style="background:#1e1e2e;white-space:pre-wrap;max-height:60vh;overflow:auto">{{ route.pending_code }}</pre>
+<details class="panel" {% if not diff_lines %}open{% endif %}>
+  <summary>הקוד המלא</summary>
+  <div class="panel-body"><pre class="code code-view">{{ route.pending_code }}</pre></div>
+</details>
 {% endif %}
-<div class="d-flex gap-2">
-  <form method="post" action="{{ url_for('approve_route', route_id=route.id) }}">__CSRF__<button class="btn btn-success px-4"{% if libs | selectattr('status', 'equalto', 'blocked') | list %} disabled{% endif %}>אשר ופרוס</button></form>
-  <form method="post" action="{{ url_for('reject_route', route_id=route.id) }}">__CSRF__<button class="btn btn-outline-danger px-4">דחה</button></form>
-</div>
 {% endblock %}"""
 
 LOGS = """{% extends 'service.html' %}
 {% block title %}יומנים{% endblock %}
 {% block service_content %}
+{% set ns = namespace(e4=0, e5=0) %}
+{% for log in logs %}{% if 'Status: 5' in log.message %}{% set ns.e5 = ns.e5 + 1 %}{% elif 'Status: 4' in log.message %}{% set ns.e4 = ns.e4 + 1 %}{% endif %}{% endfor %}
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h5 class="fw-semibold mb-0">יומנים</h5>
+  <div>
+    <h5 class="fw-semibold mb-0">יומנים</h5>
+    {% if logs %}<div class="d-flex gap-2 flex-wrap mt-1 small"><span class="text-muted">{{ logs|length }} בקשות אחרונות</span>{% if ns.e5 %}<span class="st st-bad">{{ ns.e5 }} שגיאות שרת</span>{% endif %}{% if ns.e4 %}<span class="st st-warn">{{ ns.e4 }} שגיאות לקוח</span>{% endif %}</div>{% endif %}
+  </div>
   <div class="d-flex align-items-center gap-3">
     <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label small text-muted" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
     <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
   </div>
 </div>
-<div class="card p-3">
-  {% if logs %}
-  <div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0">
-    <thead><tr><th>זמן (UTC)</th><th>פרטים</th></tr></thead>
-    <tbody>
-    {% for log in logs %}
-      <tr class="log-row{% if 'Status: 5' in log.message %} s-err{% endif %}"><td class="text-nowrap ltr">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td><td class="text-muted ltr code">{{ log.message }}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table></div>
-  <div class="small text-muted pt-2">מוצגות {{ logs|length }} הבקשות האחרונות.</div>
-  {% else %}
-  <div class="text-center text-muted py-4">עוד לא הגיעו בקשות לשרת הזה.</div>
-  {% endif %}
+{% if logs %}
+<div class="log-list" role="table" aria-label="בקשות אחרונות לשרת">
+  <div class="log-head" role="row"><div role="columnheader">זמן (UTC)</div><div role="columnheader">שיטה</div><div role="columnheader">סטטוס</div><div role="columnheader">פרטים</div></div>
+  {% for log in logs %}
+  {% set parts = log.message.split(' | ') %}
+  {% set parsed = parts|length >= 2 and parts[0].startswith('Method: ') and parts[1].startswith('Status: ') %}
+  {% set code = parts[1][8:] if parsed else '' %}
+  <div class="log-row{% if code[:1] == '5' %} is-5{% elif code[:1] == '4' %} is-4{% endif %}" role="row">
+    <div class="log-time" role="cell">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+    <div class="log-method" role="cell">{% if parsed %}{{ parts[0][8:] }}{% endif %}</div>
+    <div class="log-st" role="cell">{% if code %}<span class="st {% if code[:1] == '2' %}st-ok{% elif code[:1] == '3' %}st-info{% elif code[:1] == '4' %}st-warn{% elif code[:1] == '5' %}st-bad{% else %}st-mute{% endif %}">{{ code }}</span>{% endif %}</div>
+    <div class="log-meta" role="cell">{% if parsed %}{{ parts[2:]|join(' · ') }}{% else %}{{ log.message }}{% endif %}</div>
+  </div>
+  {% endfor %}
 </div>
+{% else %}
+<div class="empty">
+  <div class="em-ico" aria-hidden="true">&#9776;</div>
+  <div class="fw-semibold mb-1" style="color:var(--text)">עוד לא הגיעו בקשות לשרת הזה</div>
+  <div>בקשות חדשות יופיעו כאן. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת.</div>
+</div>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
@@ -515,22 +624,89 @@ LOGS = """{% extends 'service.html' %}
 EDIT = """{% extends 'service.html' %}
 {% block title %}עריכת שרת{% endblock %}
 {% block service_content %}
-<h5 class="fw-semibold mb-3">קוד</h5>
 {% if route.pending_code and route.live_code %}
-<div class="alert alert-warning">הגרסה האחרונה שנשמרה לא עלתה (כנראה שגיאת טעינה). העריכה ממשיכה ממנה, והגרסה הקודמת ממשיכה לרוץ בינתיים.</div>
+<div class="notice notice-warn" role="alert"><span class="grow">הגרסה האחרונה שנשמרה לא עלתה (כנראה שגיאת טעינה). העריכה ממשיכה ממנה, והגרסה הקודמת ממשיכה לרוץ בינתיים.</span></div>
 {% endif %}
-<div class="alert alert-light border small">
-  שמירה מפעילה את השינוי מיד.
-  הקוד צריך להגדיר <code>app = Flask(__name__)</code> (או Blueprint בשם <code>bp</code>).
-</div>
+
+{% if not bundle %}
+{% set saved_code = route.pending_code or route.live_code or '' %}
+{% set is_dirty = ai_diff or (code|trim != saved_code|trim) %}
+<form method="post" action="{{ url_for('edit_route', route_id=route.id) }}" id="editForm">
+  __CSRF__
+  <div class="actionbar">
+    <button type="submit" class="btn btn-primary px-3 js-load" title="שומר ומפעיל את הקוד מיד">שמור ופרוס</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
+    <span class="st save-state {% if is_dirty %}st-warn{% else %}st-ok{% endif %}" id="saveState" aria-live="polite">{% if is_dirty %}שינויים שלא נשמרו{% else %}שמור{% endif %}</span>
+    <span class="spacer"></span>
+    <span class="hint">Ctrl+S לשמירה · Tab להזחה</span>
+  </div>
+  {% if ai_diff is defined and ai_diff is not none %}
+  <div class="notice notice-info" role="status">
+    <span class="grow">{% if ai_diff %}ההצעה של ה-AI הוכנסה לעורך ועדיין לא נשמרה.{% else %}ה-AI לא ביצע שינוי בקוד.{% endif %}
+    {% if ai_diff %}<details class="mt-1"><summary class="d-inline">הצג את השינויים</summary>
+      <pre class="code ltr p-3 rounded-3 diff mt-2 mb-0">{% for l in ai_diff %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
+    </details>{% endif %}</span>
+    {% if ai_diff %}<button type="button" class="btn btn-sm btn-outline-secondary" id="undoAi">בטל הצעה</button>{% endif %}
+  </div>
+  {% if ai_diff %}<textarea id="origCode" hidden>
+{{ original_code }}</textarea>{% endif %}
+  {% endif %}
+  <textarea name="code" id="code" class="form-control ltr code editor mb-1" rows="24" spellcheck="false" required aria-label="קוד השרת" data-max="{{ max_code_chars }}" data-dirty="{{ '1' if is_dirty else '' }}">
+{{ code }}</textarea>
+  <div id="codeCount" class="form-text text-end mb-2"></div>
+  <div class="form-text">הקוד צריך להגדיר <code>app = Flask(__name__)</code> (או Blueprint בשם <code>bp</code>). שמירה מפעילה את השינוי מיד.</div>
+</form>
+
+<details class="panel" {% if instruction or (ai_diff is defined and ai_diff is not none) %}open{% endif %}>
+  <summary>עריכה בעזרת AI</summary>
+  <div class="panel-body">
+  <form method="post" action="{{ url_for('edit_route_ai', route_id=route.id) }}" id="aiForm">
+    __CSRF__
+    <input type="hidden" name="code" id="aiCode">
+    <div class="row g-2">
+      <div class="col-md-8">
+        <textarea name="instruction" class="form-control" rows="3" maxlength="2000" required aria-label="הוראה ל-AI" placeholder="תאר מה לשנות, למשל: הוסף בדיקה שהפרמטר id קיים, והחזר שגיאה 400 אם לא">{{ instruction|default('') }}</textarea>
+      </div>
+      <div class="col-md-4 d-flex flex-column gap-2">
+        <select name="provider" class="form-select" aria-label="ספק AI">
+          {% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-outline-primary js-load">הצע שינוי</button>
+      </div>
+    </div>
+    <div class="form-text mt-2">ה-AI מקבל את הקוד שנמצא כרגע בעורך ומחזיר גרסה מוצעת. שום דבר לא נשמר עד שתלחץ "שמור ופרוס". הפעולה יכולה לקחת כדקה.</div>
+  </form>
+  </div>
+</details>
+{% else %}
+<form method="post" action="{{ url_for('edit_route', route_id=route.id) }}" id="bundleForm">
+  __CSRF__
+  <input type="hidden" name="bundle_json" id="bundleJson">
+  <div class="actionbar">
+    <button type="submit" class="btn btn-primary px-3 js-load" title="שומר ומפעיל את הקוד מיד">שמור ופרוס</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
+    <span class="st save-state st-ok" id="saveState" aria-live="polite">שמור</span>
+    <span class="spacer"></span>
+    <span class="hint">Ctrl+S לשמירה · Tab להזחה</span>
+  </div>
+  <div class="d-flex gap-2 align-items-center mb-2 flex-wrap">
+    <select id="fileSel" class="form-select ltr" style="max-width:420px" aria-label="קובץ לעריכה"></select>
+    <span class="text-muted small" id="fileInfo"></span>
+  </div>
+  <textarea id="bcode" class="form-control ltr code editor mb-1" rows="24" spellcheck="false" aria-label="תוכן הקובץ"></textarea>
+  <div class="form-text text-end mb-2" id="bcount"></div>
+  <div class="form-text">שרת מרובה קבצים: {{ bundle.files|length }} קבצים, קובץ ראשי <code class="ltr">{{ bundle.entry }}</code>. כדי להוסיף או למחוק קבצים, משוך מחדש מ-GitHub. עריכה בעזרת AI זמינה רק לשרתים של קובץ בודד.</div>
+</form>
+<script type="application/json" id="bundleData">{{ bundle|tojson }}</script>
+{% endif %}
 
 {% if route.source %}
-<div class="card p-3 mb-3">
+<div class="panel mt-3 p-3">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
+    <div class="small">
       <span class="badge bg-dark">GitHub</span>
-      <span class="ltr d-inline-block">{{ route.source.repo }}{% if route.source.path %}/{{ route.source.path }}{% endif %}{% if route.source.ref %} @ {{ route.source.ref }}{% endif %}</span>{% if bundle %}<span class="text-muted small">(כמה קבצים)</span>{% endif %}
-      <span class="text-muted small ltr d-inline-block">{{ (route.source.sha or '')[:7] }}</span>
+      <span class="ltr d-inline-block">{{ route.source.repo }}{% if route.source.path %}/{{ route.source.path }}{% endif %}{% if route.source.ref %} @ {{ route.source.ref }}{% endif %}</span>{% if bundle %} <span class="text-muted">(כמה קבצים)</span>{% endif %}
+      <span class="text-muted ltr d-inline-block">{{ (route.source.sha or '')[:7] }}</span>
     </div>
     {% if bundle or route.source.path.lower().endswith('.py') %}
     <form method="post" action="{{ url_for('sync_route', route_id=route.id) }}" class="m-0">__CSRF__<button class="btn btn-sm btn-outline-primary js-load">משוך גרסה עדכנית מ-GitHub</button></form>
@@ -540,71 +716,7 @@ EDIT = """{% extends 'service.html' %}
 </div>
 {% endif %}
 
-{% if not bundle %}
-<div class="card p-3 mb-3">
-  <h6 class="mb-2">עריכה בעזרת AI</h6>
-  <form method="post" action="{{ url_for('edit_route_ai', route_id=route.id) }}" id="aiForm">
-    __CSRF__
-    <input type="hidden" name="code" id="aiCode">
-    <div class="row g-2">
-      <div class="col-md-8">
-        <textarea name="instruction" class="form-control" rows="3" maxlength="2000" required placeholder="תאר מה לשנות, למשל: הוסף בדיקה שהפרמטר id קיים, והחזר שגיאה 400 אם לא">{{ instruction|default('') }}</textarea>
-      </div>
-      <div class="col-md-4 d-flex flex-column gap-2">
-        <select name="provider" class="form-select">
-          {% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>{% endfor %}
-        </select>
-        <button type="submit" class="btn btn-outline-primary js-load">הצע שינוי</button>
-      </div>
-    </div>
-    <div class="form-text mt-2">ה-AI מקבל את הקוד שנמצא כרגע בעורך, ומחזיר גרסה מוצעת. שום דבר לא נשמר עד שתלחץ "שמור שינויים". הפעולה יכולה לקחת כדקה.</div>
-  </form>
-</div>
-
-{% if ai_diff is defined and ai_diff is not none %}
-<div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2">
-  <span>{% if ai_diff %}ההצעה של ה-AI הוכנסה לעורך שלמטה ועדיין לא נשמרה. כך הקוד השתנה:{% else %}ה-AI לא ביצע שינוי בקוד.{% endif %}</span>
-  {% if ai_diff %}<button type="button" class="btn btn-sm btn-outline-secondary" id="undoAi">החזר למה שהיה לפני ההצעה</button>{% endif %}
-</div>
-{% if ai_diff %}
-<pre class="code ltr p-3 rounded-3 diff mb-3">{% for l in ai_diff %}<span class="{% if l.startswith('+') and not l.startswith('+++') %}d-add{% elif l.startswith('-') and not l.startswith('---') %}d-del{% elif l.startswith('@@') %}d-hunk{% endif %}">{{ l }}</span>{% endfor %}</pre>
-<textarea id="origCode" hidden>
-{{ original_code }}</textarea>
-{% endif %}
-{% endif %}
-
-<form method="post" action="{{ url_for('edit_route', route_id=route.id) }}" id="editForm">
-  __CSRF__
-  <textarea name="code" id="code" class="form-control ltr code mb-1" rows="24" spellcheck="false" required data-max="{{ max_code_chars }}" data-dirty="{{ '1' if ai_diff else '' }}">
-{{ code }}</textarea>
-  <div id="codeCount" class="form-text text-end mb-3"></div>
-  <div class="d-flex gap-2 align-items-center">
-    <button type="submit" class="btn btn-primary px-4 js-load">שמור שינויים</button>
-    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
-    <span class="text-muted small">Ctrl+S לשמירה · Tab להזחה</span>
-  </div>
-</form>
-{% else %}
-<div class="alert alert-info small">שרת מרובה קבצים: {{ bundle.files|length }} קבצים, קובץ ראשי <code class="ltr">{{ bundle.entry }}</code>. אפשר לערוך את תוכן הקבצים. כדי להוסיף או למחוק קבצים, משוך מחדש מ-GitHub. עריכה בעזרת AI זמינה רק לשרתים של קובץ בודד.</div>
-<form method="post" action="{{ url_for('edit_route', route_id=route.id) }}" id="bundleForm">
-  __CSRF__
-  <input type="hidden" name="bundle_json" id="bundleJson">
-  <div class="d-flex gap-2 align-items-center mb-2 flex-wrap">
-    <select id="fileSel" class="form-select ltr" style="max-width:420px"></select>
-    <span class="text-muted small" id="fileInfo"></span>
-  </div>
-  <textarea id="bcode" class="form-control ltr code mb-1" rows="24" spellcheck="false"></textarea>
-  <div class="form-text text-end mb-3" id="bcount"></div>
-  <div class="d-flex gap-2 align-items-center">
-    <button type="submit" class="btn btn-primary px-4 js-load">שמור שינויים</button>
-    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
-    <span class="text-muted small">Ctrl+S לשמירה · Tab להזחה</span>
-  </div>
-</form>
-<script type="application/json" id="bundleData">{{ bundle|tojson }}</script>
-{% endif %}
-
-<div class="card p-3 mt-4 scroll-target" id="env">
+<div class="card p-3 mt-3 scroll-target" id="env">
   <h6 class="mb-1">משתני סביבה</h6>
   <div class="text-muted small mb-3">
     לסודות כמו מפתחות API. נשמרים מוצפנים ולא מוצגים אחרי השמירה. בקוד קוראים אותם כך:
@@ -623,8 +735,8 @@ EDIT = """{% extends 'service.html' %}
   {% endfor %}
   <form method="post" action="{{ url_for('set_env_var', route_id=route.id) }}" class="row g-2 mt-2">
     __CSRF__
-    <div class="col-md-4"><input name="name" class="form-control ltr" placeholder="NAME" required pattern="[A-Za-z_][A-Za-z0-9_]{0,63}" autocomplete="off" autocapitalize="characters"></div>
-    <div class="col-md-6"><input type="password" name="value" class="form-control ltr" placeholder="ערך" required autocomplete="off"></div>
+    <div class="col-md-4"><input name="name" class="form-control ltr" placeholder="NAME" aria-label="שם המשתנה" required pattern="[A-Za-z_][A-Za-z0-9_]{0,63}" autocomplete="off" autocapitalize="characters"></div>
+    <div class="col-md-6"><input type="password" name="value" class="form-control ltr" placeholder="ערך" aria-label="ערך המשתנה" required autocomplete="off"></div>
     <div class="col-md-2"><button class="btn btn-outline-primary w-100 js-load">שמור</button></div>
   </form>
   <div class="form-text">שמירה בשם קיים מחליפה את הערך.</div>
@@ -634,18 +746,20 @@ EDIT = """{% extends 'service.html' %}
 {% if not bundle %}
 <script>
 (function(){
-  var t=document.getElementById('code'), c=document.getElementById('codeCount'), f=document.getElementById('editForm'), ai=document.getElementById('aiForm');
+  var t=document.getElementById('code'), c=document.getElementById('codeCount'), f=document.getElementById('editForm'), ai=document.getElementById('aiForm'), st=document.getElementById('saveState');
   var max=parseInt(t.dataset.max,10), dirty=t.dataset.dirty==='1';
+  function state(){st.textContent=dirty?'שינויים שלא נשמרו':'שמור';st.classList.toggle('st-warn',dirty);st.classList.toggle('st-ok',!dirty);}
   function count(){var n=t.value.length;c.textContent=n.toLocaleString('en-US')+' / '+max.toLocaleString('en-US')+' תווים';c.classList.toggle('text-danger',n>max);}
-  t.addEventListener('input',function(){dirty=true;count();}); count();
+  function touch(){dirty=true;state();count();}
+  t.addEventListener('input',touch); count();
   t.addEventListener('keydown',function(e){
-    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();var s=t.selectionStart,en=t.selectionEnd;t.value=t.value.substring(0,s)+'    '+t.value.substring(en);t.selectionStart=t.selectionEnd=s+4;dirty=true;count();}
+    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();var s=t.selectionStart,en=t.selectionEnd;t.value=t.value.substring(0,s)+'    '+t.value.substring(en);t.selectionStart=t.selectionEnd=s+4;touch();}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();f.requestSubmit();}
   });
   f.addEventListener('submit',function(){dirty=false;});
   ai.addEventListener('submit',function(){document.getElementById('aiCode').value=t.value;dirty=false;});
   var u=document.getElementById('undoAi');
-  if(u){u.addEventListener('click',function(){t.value=document.getElementById('origCode').value;count();});}
+  if(u){u.addEventListener('click',function(){t.value=document.getElementById('origCode').value;dirty=false;state();count();});}
   window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue='';}});
 })();
 </script>
@@ -653,17 +767,19 @@ EDIT = """{% extends 'service.html' %}
 <script>
 (function(){
   var data=JSON.parse(document.getElementById('bundleData').textContent), files=data.files, entry=data.entry;
-  var sel=document.getElementById('fileSel'), ta=document.getElementById('bcode'), cnt=document.getElementById('bcount');
+  var sel=document.getElementById('fileSel'), ta=document.getElementById('bcode'), cnt=document.getElementById('bcount'), st=document.getElementById('saveState');
   var info=document.getElementById('fileInfo'), form=document.getElementById('bundleForm');
   var cur=null, dirty=false, names=Object.keys(files).sort();
   names.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=(p===entry?'★ ':'')+p;sel.appendChild(o);});
+  function state(){st.textContent=dirty?'שינויים שלא נשמרו':'שמור';st.classList.toggle('st-warn',dirty);st.classList.toggle('st-ok',!dirty);}
   function count(){cnt.textContent=ta.value.length.toLocaleString('en-US')+' תווים בקובץ';}
   function save(){if(cur!==null){files[cur]=ta.value;}}
   function show(p){cur=p;sel.value=p;ta.value=files[p];info.textContent=p===entry?'קובץ ראשי':'';count();}
+  function touch(){dirty=true;state();count();}
   sel.addEventListener('change',function(){save();show(sel.value);});
-  ta.addEventListener('input',function(){dirty=true;count();});
+  ta.addEventListener('input',touch);
   ta.addEventListener('keydown',function(e){
-    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();var s=ta.selectionStart,en=ta.selectionEnd;ta.value=ta.value.substring(0,s)+'    '+ta.value.substring(en);ta.selectionStart=ta.selectionEnd=s+4;dirty=true;count();}
+    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();var s=ta.selectionStart,en=ta.selectionEnd;ta.value=ta.value.substring(0,s)+'    '+ta.value.substring(en);ta.selectionStart=ta.selectionEnd=s+4;touch();}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();form.requestSubmit();}
   });
   form.addEventListener('submit',function(){save();document.getElementById('bundleJson').value=JSON.stringify(files);dirty=false;});
@@ -677,46 +793,51 @@ EDIT = """{% extends 'service.html' %}
 NEW = """{% extends 'base.html' %}
 {% block title %}שרת חדש{% endblock %}
 {% block content %}
+{% set f = form|default({}) %}
+{% set m = f.get('source_mode', 'paste') %}
 <div class="mx-auto" style="max-width:780px">
   <div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span>שרת חדש</span></div>
-  <h4 class="fw-semibold mb-1">שרת חדש</h4>
-  <div class="text-muted mb-4">מדביקים קוד Python או מייבאים מ-GitHub, והשרת עולה מיד בכתובת משלו.</div>
+  <h1 class="fs-4 fw-semibold mb-1">שרת חדש</h1>
+  <div class="text-muted mb-3">מדביקים קוד Python או מייבאים מ-GitHub, והשרת עולה מיד בכתובת משלו.</div>
 <div class="card p-4">
-      <h5 class="mb-3">שרת חדש</h5>
       <form method="post" action="{{ url_for('deploy_server') }}">
         __CSRF__
-        <div class="btn-group w-100 mb-3" role="group">
-          <input type="radio" class="btn-check" name="source_mode" id="mode_paste" value="paste" checked>
+        <div class="sec"><span class="step-num">1</span>מקור הקוד</div>
+        <div class="btn-group w-100" role="group" aria-label="מקור הקוד">
+          <input type="radio" class="btn-check" name="source_mode" id="mode_paste" value="paste" {% if m == 'paste' %}checked{% endif %}>
           <label class="btn btn-outline-primary" for="mode_paste">הדבקת קוד</label>
-          <input type="radio" class="btn-check" name="source_mode" id="mode_github" value="github">
+          <input type="radio" class="btn-check" name="source_mode" id="mode_github" value="github" {% if m == 'github' %}checked{% endif %}>
           <label class="btn btn-outline-primary" for="mode_github">קובץ מ-GitHub</label>
-          <input type="radio" class="btn-check" name="source_mode" id="mode_repo" value="repo">
+          <input type="radio" class="btn-check" name="source_mode" id="mode_repo" value="repo" {% if m == 'repo' %}checked{% endif %}>
           <label class="btn btn-outline-primary" for="mode_repo">ריפו שלם מ-GitHub</label>
         </div>
 
-        <div class="row g-3 mb-3">
-          <div class="col-sm-6">
-            <label class="form-label">שם הנתיב</label>
-            <input type="text" name="route_name" class="form-control ltr" placeholder="my-api" required data-lower maxlength="40" pattern="[a-z0-9][a-z0-9_\\-]{0,39}" title="אותיות אנגליות קטנות, ספרות, _ או - (עד 40 תווים). השם ייחודי לכל המשתמשים" autocapitalize="none">
-            <div class="form-text">הכתובת: <span class="ltr d-inline-block">{{ request.host_url.rstrip('/') }}/<b id="rnPreview">...</b></span> <span class="text-muted">· השם ייחודי לכל המשתמשים</span></div>
+        <div class="sec"><span class="step-num">2</span>כתובת השרת</div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label" for="route_name">שם הנתיב</label>
+            <input type="text" name="route_name" id="route_name" class="form-control ltr" placeholder="my-api" required data-lower maxlength="40" pattern="[a-z0-9][a-z0-9_\\-]{0,39}" title="אותיות אנגליות קטנות, ספרות, _ או - (עד 40 תווים). השם ייחודי לכל המשתמשים" autocapitalize="none" autocomplete="off" value="{{ f.get('route_name', '') }}">
+            <div class="url-preview is-empty" id="urlBox" aria-live="polite"><span class="up-host">{{ request.host_url.rstrip('/') }}/</span><span class="up-name" id="rnPreview">my-api</span></div>
+            <div class="form-text" id="rnHint">אותיות אנגליות קטנות, ספרות, _ או -, עד 40 תווים. השם ייחודי לכל המשתמשים.</div>
           </div>
           <div class="col-sm-6 paste-only">
-            <label class="form-label">שפת הקוד שהדבקת</label>
-            <input type="text" name="source_lang" id="lang" list="langs" class="form-control ltr" value="Python" required maxlength="30">
+            <label class="form-label" for="lang">שפת הקוד שהדבקת</label>
+            <input type="text" name="source_lang" id="lang" list="langs" class="form-control ltr" value="{{ f.get('source_lang', 'Python') }}" required maxlength="30">
             <datalist id="langs"><option value="Python"><option value="PHP"><option value="JavaScript"><option value="Node.js"><option value="Java"><option value="C#"><option value="Go"><option value="Ruby"></datalist>
           </div>
         </div>
 
+        <div class="sec"><span class="step-num">3</span><span class="paste-only">הקוד</span><span class="gh-any d-none">הקוד מ-GitHub</span></div>
         <div class="gh-any d-none">
-          <label class="form-label">כתובת הריפו או הקובץ ב-GitHub</label>
-          <input type="text" name="github_url" id="github_url" class="form-control ltr mb-1" placeholder="https://github.com/user/repo">
+          <label class="form-label" for="github_url">כתובת הריפו או הקובץ ב-GitHub</label>
+          <input type="text" name="github_url" id="github_url" class="form-control ltr mb-1" placeholder="https://github.com/user/repo" value="{{ f.get('github_url', '') }}">
           <div class="form-text mb-3 gh-file-only">אפשר להדביק קישור ישיר לקובץ (…/blob/main/app.py), או רק את הריפו ולמלא נתיב.</div>
           <div class="form-text mb-3 repo-only">אפשר להדביק גם קישור לתיקייה בתוך הריפו (…/tree/main/server).</div>
           <div class="row g-3 mb-3">
-            <div class="col-sm-4 gh-file-only"><label class="form-label">נתיב הקובץ (אם לא בקישור)</label><input type="text" name="github_path" class="form-control ltr" placeholder="app.py"></div>
-            <div class="col-sm-4 repo-only"><label class="form-label">תיקייה בריפו (אופציונלי)</label><input type="text" name="github_subdir" class="form-control ltr" placeholder="server"></div>
-            <div class="col-sm-4 repo-only"><label class="form-label">קובץ ראשי (אופציונלי)</label><input type="text" name="github_entry" class="form-control ltr" placeholder="app.py"></div>
-            <div class="col-sm-4"><label class="form-label">ענף (אופציונלי)</label><input type="text" name="github_ref" class="form-control ltr" placeholder="main"></div>
+            <div class="col-sm-4 gh-file-only"><label class="form-label" for="github_path">נתיב הקובץ (אם לא בקישור)</label><input type="text" name="github_path" id="github_path" class="form-control ltr" placeholder="app.py" value="{{ f.get('github_path', '') }}"></div>
+            <div class="col-sm-4 repo-only"><label class="form-label" for="github_subdir">תיקייה בריפו (אופציונלי)</label><input type="text" name="github_subdir" id="github_subdir" class="form-control ltr" placeholder="server" value="{{ f.get('github_subdir', '') }}"></div>
+            <div class="col-sm-4 repo-only"><label class="form-label" for="github_entry">קובץ ראשי (אופציונלי)</label><input type="text" name="github_entry" id="github_entry" class="form-control ltr" placeholder="app.py" value="{{ f.get('github_entry', '') }}"></div>
+            <div class="col-sm-4"><label class="form-label" for="github_ref">ענף (אופציונלי)</label><input type="text" name="github_ref" id="github_ref" class="form-control ltr" placeholder="main" value="{{ f.get('github_ref', '') }}"></div>
           </div>
           <div class="form-text mb-3">
             {% if 'github' in saved_providers %}GitHub מחובר, ואפשר לייבא גם מריפו פרטי.{% else %}ריפו ציבורי לא דורש חיבור. לריפו פרטי חבר טוקן בכרטיס "חיבור GitHub".{% endif %}
@@ -726,25 +847,30 @@ NEW = """{% extends 'base.html' %}
         </div>
 
         <div id="pyBox" class="form-check mb-3 d-none">
-          <input class="form-check-input" type="checkbox" name="force_ai" value="1" id="force_ai">
+          <input class="form-check-input" type="checkbox" name="force_ai" value="1" id="force_ai" {% if f.get('force_ai') %}checked{% endif %}>
           <label class="form-check-label" for="force_ai">לתרגם גם את קוד ה-Python דרך AI (לסקריפט שאינו אפליקציית Flask)</label>
         </div>
         <div id="aiBox" class="mb-3 d-none">
-          <label class="form-label">ספק AI לתרגום</label>
-          <select name="provider" class="form-select">
+          <label class="form-label" for="provider">ספק AI לתרגום</label>
+          <select name="provider" id="provider" class="form-select">
             {% for key, label in providers.items() %}
-            <option value="{{ key }}">{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>
+            <option value="{{ key }}" {% if f.get('provider') == key %}selected{% endif %}>{{ label }}{% if key in saved_providers %} ✓{% else %} (אין מפתח){% endif %}</option>
             {% endfor %}
           </select>
         </div>
-        <div id="modeHint" class="alert alert-light border small"></div>
+        <div id="modeHint" class="notice notice-info"></div>
 
         <div class="paste-only">
-          <label class="form-label">הקוד</label>
-          <textarea name="code" id="code" class="form-control ltr code" rows="10" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}"></textarea>
-          <div id="codeCount" class="form-text mb-3 text-end"></div>
+          <label class="form-label" for="code">הקוד</label>
+          <textarea name="code" id="code" class="form-control ltr code editor" rows="10" required placeholder="הדבק כאן את הקוד..." data-max-direct="{{ max_code_chars }}" data-max-ai="{{ max_ai_chars }}">
+{{ f.get('code', '') }}</textarea>
+          <div id="codeCount" class="form-text text-end"></div>
         </div>
-        <button type="submit" class="btn btn-primary px-4 js-load">פרוס שרת</button>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary px-4 js-load">פרוס שרת</button>
+          <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">ביטול</a>
+          <span class="text-muted small">השרת עולה מיד אחרי הפריסה.</span>
+        </div>
       </form>
     </div>
 </div>
@@ -779,75 +905,97 @@ NEW = """{% extends 'base.html' %}
   document.querySelectorAll('input[name=source_mode]').forEach(function(r){r.addEventListener('change',upd);});
   var qm=new URLSearchParams(location.search).get('mode'); if(qm){var qr=document.getElementById('mode_'+qm); if(qr){qr.checked=true;}}
   lang.addEventListener('input',upd); force.addEventListener('change',upd); code.addEventListener('input',upd); upd();
-  var rn=document.querySelector('[name=route_name]'), pv=$('rnPreview');
-  rn.addEventListener('input',function(){pv.textContent=rn.value||'...';});
+  var rn=$('route_name'), pv=$('rnPreview'), box=$('urlBox'), rh=$('rnHint'), okMsg=rh.textContent;
+  var NAME_RE=/^[a-z0-9][a-z0-9_-]{0,39}$/;
+  function prev(){
+    var v=rn.value; pv.textContent=v||'my-api'; box.classList.toggle('is-empty',!v);
+    var bad=v&&!NAME_RE.test(v); box.classList.toggle('is-bad',!!bad);
+    rh.textContent=bad?'השם לא תקין: אותיות אנגליות קטנות, ספרות, _ או - בלבד, מתחיל באות או ספרה, עד 40 תווים.':okMsg;
+    rh.classList.toggle('text-danger',!!bad);
+  }
+  rn.addEventListener('input',function(){rn.value=rn.value.toLowerCase();prev();}); prev();
   document.querySelectorAll('[data-lower]').forEach(function(i){i.addEventListener('input',function(){i.value=i.value.toLowerCase();});});
 })();
 </script>
 {% endblock %}"""
+
 
 ACCOUNT = """{% extends 'base.html' %}
 {% block title %}הגדרות חשבון{% endblock %}
 {% block content %}
 <div class="mx-auto" style="max-width:780px">
   <div class="crumbs mb-2"><a href="{{ url_for('index') }}">שרתים</a> <span>/</span> <span>הגדרות חשבון</span></div>
-  <h4 class="fw-semibold mb-4">הגדרות חשבון</h4>
-  <div class="card p-4">
-      <h5 class="mb-1">חיבור GitHub</h5>
-      <div class="text-muted small mb-3">לייבוא קוד מריפו פרטי. ריפו ציבורי לא דורש חיבור.</div>
-      {% if 'github' in saved_providers %}
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="badge bg-success">מחובר</span>
-        <form method="post" action="{{ url_for('update_github') }}" class="m-0" data-confirm="לנתק את החיבור ל-GitHub?">
-          __CSRF__<button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק</button>
-        </form>
-      </div>
-      {% else %}
-      <form method="post" action="{{ url_for('update_github') }}">
+  <h1 class="fs-4 fw-semibold mb-3">הגדרות חשבון</h1>
+
+  <section class="card acct" aria-labelledby="h-profile">
+    <div class="acct-head">
+      <span class="svc-ico svc-ico-lg" aria-hidden="true">{{ current_user.username[:1]|upper }}</span>
+      <div class="grow"><h2 id="h-profile" class="ltr">{{ current_user.username }}</h2><p>{% if current_user.email %}<span class="ltr d-inline-block">{{ current_user.email }}</span>{% else %}חשבון עם סיסמה{% endif %}</p></div>
+      <span class="st {% if current_user.is_admin %}st-info{% else %}st-mute{% endif %}">{% if current_user.is_admin %}מנהל{% else %}משתמש{% endif %}</span>
+    </div>
+  </section>
+
+  <section class="card acct" aria-labelledby="h-github">
+    <div class="acct-head">
+      <span class="svc-ico" aria-hidden="true">GH</span>
+      <div class="grow"><h2 id="h-github">חיבור GitHub</h2><p>לייבוא קוד מריפו פרטי. ריפו ציבורי לא דורש חיבור.</p></div>
+      {% if 'github' in saved_providers %}<span class="st st-ok">מחובר</span>{% else %}<span class="st st-mute">לא מחובר</span>{% endif %}
+    </div>
+    {% if 'github' in saved_providers %}
+    <form method="post" action="{{ url_for('update_github') }}" class="m-0 d-flex justify-content-between align-items-center flex-wrap gap-2" data-confirm="לנתק את החיבור ל-GitHub?">
+      __CSRF__<span class="text-muted small">הטוקן שמור מוצפן ומשמש לקריאה בלבד.</span><button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק</button>
+    </form>
+    {% else %}
+    <form method="post" action="{{ url_for('update_github') }}">
+      __CSRF__
+      <label class="form-label" for="gh_token">טוקן גישה</label>
+      <input type="password" id="gh_token" name="token" class="form-control ltr mb-2" placeholder="github_pat_..." autocomplete="off" required>
+      <button name="action" value="save" class="btn btn-primary">חבר GitHub</button>
+    </form>
+    <details class="mt-3 small text-muted">
+      <summary>איך יוצרים טוקן קריאה בלבד?</summary>
+      <ol class="ps-3 mb-0 mt-2">
+        <li>ב-GitHub: Settings, Developer settings, Personal access tokens, Fine-grained tokens.</li>
+        <li>Generate new token. ב-Repository access בחר רק את הריפו שצריך.</li>
+        <li>ב-Repository permissions הגדר Contents: Read-only.</li>
+        <li>העתק את הטוקן והדבק כאן. הוא נשמר מוצפן ומשמש לקריאה בלבד.</li>
+      </ol>
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="card acct" aria-labelledby="h-keys">
+    <div class="acct-head">
+      <span class="svc-ico" aria-hidden="true">AI</span>
+      <div class="grow"><h2 id="h-keys">מפתחות API</h2><p>נדרשים רק לתרגום קוד משפות שאינן Python ולעריכה בעזרת AI. נשמרים מוצפנים.</p></div>
+    </div>
+    {% for key, label in providers.items() %}
+    <div class="acct-row">
+      <span class="fw-medium">{{ label }}</span>
+      {% if key in saved_providers %}
+      <form method="post" action="{{ url_for('update_key') }}" class="m-0 d-flex align-items-center gap-2">
         __CSRF__
-        <input type="password" name="token" class="form-control ltr mb-2" placeholder="github_pat_..." autocomplete="off" required>
-        <button name="action" value="save" class="btn btn-outline-primary w-100">חבר GitHub</button>
+        <input type="hidden" name="provider" value="{{ key }}">
+        <span class="st st-ok">שמור</span>
+        <button name="action" value="delete" class="btn btn-sm btn-outline-danger" aria-label="מחק את המפתח של {{ label }}">מחק</button>
       </form>
-      <details class="mt-3 small text-muted">
-        <summary>איך יוצרים טוקן קריאה בלבד?</summary>
-        <ol class="ps-3 mb-0 mt-2">
-          <li>ב-GitHub: Settings, Developer settings, Personal access tokens, Fine-grained tokens.</li>
-          <li>Generate new token. ב-Repository access בחר רק את הריפו שצריך.</li>
-          <li>ב-Repository permissions הגדר Contents: Read-only.</li>
-          <li>העתק את הטוקן והדבק כאן. הוא נשמר מוצפן ומשמש לקריאה בלבד.</li>
-        </ol>
-      </details>
+      {% else %}
+      <span class="st st-mute">לא הוגדר</span>
       {% endif %}
     </div>
-  <div class="mb-4"></div>
-  <div class="card p-4 mb-4">
-      <h5 class="mb-1">מפתחות API</h5>
-      <div class="text-muted small mb-3">נדרשים רק לתרגום קוד משפות שאינן Python. נשמרים מוצפנים.</div>
-      {% for key, label in providers.items() %}
-      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-        <span>{{ label }}</span>
-        {% if key in saved_providers %}
-        <form method="post" action="{{ url_for('update_key') }}" class="m-0 d-flex align-items-center gap-2">
-          __CSRF__
-          <input type="hidden" name="provider" value="{{ key }}">
-          <span class="badge bg-success">שמור</span>
-          <button name="action" value="delete" class="btn btn-sm btn-outline-danger">מחק</button>
-        </form>
-        {% else %}
-        <span class="badge bg-secondary">לא הוגדר</span>
-        {% endif %}
+    {% endfor %}
+    <form method="post" action="{{ url_for('update_key') }}" class="acct-add">
+      __CSRF__
+      <div class="fw-semibold small mb-2">הוספה או החלפה של מפתח</div>
+      <div class="row g-2">
+        <div class="col-sm-4"><label class="form-label" for="key_provider">ספק</label>
+          <select name="provider" id="key_provider" class="form-select">{% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-sm-8"><label class="form-label" for="key_value">מפתח</label>
+          <input type="password" id="key_value" name="api_key" class="form-control ltr" placeholder="הדבק מפתח" autocomplete="off" required></div>
       </div>
-      {% endfor %}
-      <form method="post" action="{{ url_for('update_key') }}" class="mt-3">
-        __CSRF__
-        <label class="form-label small">הוספה או החלפה של מפתח</label>
-        <select name="provider" class="form-select mb-2">
-          {% for key, label in providers.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
-        </select>
-        <input type="password" name="api_key" class="form-control ltr mb-2" placeholder="הדבק מפתח" autocomplete="off" required>
-        <button name="action" value="save" class="btn btn-outline-primary w-100">שמור מפתח</button>
-      </form>
-  </div>
+      <button name="action" value="save" class="btn btn-primary mt-3">שמור מפתח</button>
+    </form>
+  </section>
 </div>
 {% endblock %}"""
 
@@ -861,10 +1009,7 @@ SERVICE = """{% extends 'base.html' %}
       <h4 class="mb-1 fw-semibold ltr">{{ route.route_name }}</h4>
       <div class="d-flex gap-2 align-items-center flex-wrap small">
         <span class="chip">Web Service</span><span class="chip">Python 3</span>
-        <span class="d-inline-flex align-items-center gap-1">
-          <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
-          {% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}
-        </span>
+        <span class="st {% if route.status == 'active' %}st-ok{% elif route.status == 'rejected' %}st-bad{% else %}st-warn{% endif %}">{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span>
         {% if route.status == 'active' %}<a href="{{ route.full_path }}" target="_blank" rel="noopener" class="ltr text-muted text-decoration-none">{{ request.host_url.rstrip('/') }}{{ route.full_path }}</a>{% else %}<span class="ltr text-muted">{{ route.full_path }}</span>{% endif %}
       </div>
     </div>
@@ -958,9 +1103,10 @@ PENDING = """{% extends 'base.html' %}
 {% block title %}ממתין לאישור{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-center pt-5">
-  <div class="card p-4 p-md-5 text-center w-100" style="max-width:480px">
+  <div class="card p-4 p-md-5 text-center w-100" style="max-width:480px" role="status">
     <div class="brand-mark" style="background:var(--warn)">&#8987;</div>
     <h4 class="mb-2">החשבון ממתין לאישור</h4>
+    <div class="mb-3"><span class="st st-warn">ממתין לאישור מנהל</span></div>
     <p class="text-muted mb-1">שלום <span class="ltr d-inline-block fw-semibold" style="color:var(--text)">{{ current_user.username }}</span>, החשבון נוצר.</p>
     <p class="text-muted">מנהל המערכת צריך לאשר אותו לפני שאפשר ליצור שרתים. אם הגישה שלך הושעתה, גם זה המסך שתראה. אפשר לרענן את הדף אחרי שהמנהל אישר.</p>
     <div class="d-flex justify-content-center gap-2 mt-2">
@@ -974,15 +1120,16 @@ PENDING = """{% extends 'base.html' %}
 ADMIN_USERS = """{% extends 'base.html' %}
 {% block title %}משתמשים{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0 fw-semibold">משתמשים</h4>
-  <span class="text-muted small">{{ users|length }} משתמשים</span>
+{% set pend_n = users|rejectattr('is_approved')|rejectattr('is_admin')|list|length %}
+<div class="page-head">
+  <div><h1>משתמשים</h1><div class="sub">{{ users|length }} משתמשים{% if pend_n %} · <span class="st st-warn">{{ pend_n }} ממתינים לאישור</span>{% endif %}</div></div>
 </div>
-<div class="d-flex gap-2 flex-wrap mb-3">
-  <input type="search" id="usrSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש לפי שם או מייל...">
-  <select id="usrFilter" class="form-select form-select-sm" style="width:auto">
+<div class="toolbar">
+  <input type="search" id="usrSearch" class="form-control form-control-sm" style="max-width:320px" placeholder="חיפוש לפי שם או מייל..." aria-label="חיפוש משתמשים">
+  <select id="usrFilter" class="form-select form-select-sm" style="width:auto" aria-label="סינון לפי סטטוס">
     <option value="">כולם</option><option value="pending">ממתינים לאישור</option><option value="approved">מאושרים</option><option value="admin">מנהלים</option>
   </select>
+  <span class="count" id="usrCount" aria-live="polite">{{ users|length }} משתמשים</span>
 </div>
 <div class="tbl mb-5" id="usrList">
   <div class="tbl-head usr-row"><div>משתמש</div><div class="c-hide">סטטוס</div><div class="c-hide">שרתים</div><div class="c-hide">נרשם</div><div></div></div>
@@ -992,10 +1139,7 @@ ADMIN_USERS = """{% extends 'base.html' %}
       <a href="{{ url_for('admin_user', user_id=u.id) }}" class="srv-name ltr d-inline-block">{{ u.username }}</a>
       <div class="srv-url text-truncate">{% if u.email %}<span class="ltr d-inline-block">{{ u.email }}</span>{% else %}חשבון סיסמה{% endif %}</div>
     </div>
-    <div class="c-hide d-flex align-items-center gap-2">
-      <span class="dot {% if u.is_approved or u.is_admin %}dot-ok{% else %}dot-warn{% endif %}"></span>
-      <span>{% if u.is_admin %}מנהל{% elif u.is_approved %}מאושר{% else %}ממתין לאישור{% endif %}</span>
-    </div>
+    <div class="c-hide"><span class="st {% if u.is_admin %}st-info{% elif u.is_approved %}st-ok{% else %}st-warn{% endif %}">{% if u.is_admin %}מנהל{% elif u.is_approved %}מאושר{% else %}ממתין לאישור{% endif %}</span></div>
     <div class="c-hide text-muted">{{ counts.get(u.id, 0) }}</div>
     <div class="c-hide text-muted">{{ u.created_at|timeago }}</div>
     <div class="srv-actions justify-content-end">
@@ -1007,7 +1151,12 @@ ADMIN_USERS = """{% extends 'base.html' %}
   </div>
   {% endfor %}
 </div>
-<div id="usrNone" class="empty mb-5 d-none">לא נמצאו משתמשים.</div>
+<div id="usrNone" class="empty mb-5 d-none">
+  <div class="em-ico" aria-hidden="true">&#8981;</div>
+  <div class="fw-semibold mb-1" style="color:var(--text)">לא נמצאו משתמשים</div>
+  <div class="mb-3">אין משתמשים שמתאימים לחיפוש או לסינון.</div>
+  <button type="button" class="btn btn-outline-secondary btn-sm" id="usrReset">נקה סינון</button>
+</div>
 {% endblock %}
 {% block scripts %}
 <script>
@@ -1020,8 +1169,11 @@ ADMIN_USERS = """{% extends 'base.html' %}
       r.classList.toggle('d-none',!ok); if(ok) shown++;
     });
     document.getElementById('usrNone').classList.toggle('d-none',shown>0);
+    document.getElementById('usrList').classList.toggle('d-none',shown===0);
+    document.getElementById('usrCount').textContent=shown+' משתמשים';
   }
   q.addEventListener('input',filt); f.addEventListener('change',filt);
+  document.getElementById('usrReset').addEventListener('click',function(){q.value='';f.value='';filt();q.focus();});
 })();
 </script>
 {% endblock %}"""
@@ -1034,10 +1186,7 @@ ADMIN_USER = """{% extends 'base.html' %}
   <div>
     <h4 class="fw-semibold ltr mb-1">{{ target.username }}</h4>
     <div class="d-flex gap-2 align-items-center flex-wrap small text-muted">
-      <span class="d-inline-flex align-items-center gap-1">
-        <span class="dot {% if target.is_approved or target.is_admin %}dot-ok{% else %}dot-warn{% endif %}"></span>
-        {% if target.is_admin %}מנהל{% elif target.is_approved %}מאושר{% else %}ממתין לאישור{% endif %}
-      </span>
+      <span class="st {% if target.is_admin %}st-info{% elif target.is_approved %}st-ok{% else %}st-warn{% endif %}">{% if target.is_admin %}מנהל{% elif target.is_approved %}מאושר{% else %}ממתין לאישור{% endif %}</span>
       <span>·</span>
       <span>{% if target.email %}<span class="ltr d-inline-block">{{ target.email }}</span>{% else %}נרשם עם סיסמה{% endif %}</span>
       <span>·</span><span>נרשם {{ target.created_at|timeago }}</span>
@@ -1070,14 +1219,11 @@ ADMIN_USER = """{% extends 'base.html' %}
         <div class="srv-url ltr text-truncate">{{ route.full_path }}</div>
       </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
-      <span class="dot {% if route.status == 'active' %}dot-ok{% elif route.status == 'rejected' %}dot-bad{% else %}dot-warn{% endif %}"></span>
-      <span>{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span>
-    </div>
+    <div><span class="st {% if route.status == 'active' %}st-ok{% elif route.status == 'rejected' %}st-bad{% else %}st-warn{% endif %}">{% if route.status == 'active' %}פעיל{% elif route.status == 'rejected' %}נדחה{% else %}לא פעיל{% endif %}</span></div>
     <div class="c-runtime text-muted">Python 3{% if route.source %} · GitHub{% endif %}{% if is_bundle %} · כמה קבצים{% endif %}</div>
     <div class="c-upd text-muted">{{ route.updated_at|timeago }}</div>
     <div class="dropdown position-relative" style="z-index:3">
-      <button type="button" class="kebab" data-bs-toggle="dropdown" aria-expanded="false" aria-label="פעולות">&#8943;</button>
+      <button type="button" class="kebab" data-bs-toggle="dropdown" aria-expanded="false" aria-label="פעולות עבור {{ route.route_name }}">&#8943;</button>
       <ul class="dropdown-menu dropdown-menu-end">
         {% if route.status == 'active' and target.is_approved %}<li><a class="dropdown-item" href="{{ route.full_path }}" target="_blank" rel="noopener">פתח את השרת</a></li>{% endif %}
         {% if route.live_code or route.pending_code %}<li><a class="dropdown-item" href="{{ url_for('edit_route', route_id=route.id) }}">צפה / ערוך קוד</a></li>{% endif %}
@@ -1090,7 +1236,11 @@ ADMIN_USER = """{% extends 'base.html' %}
   {% endfor %}
 </div>
 {% else %}
-<div class="empty mb-5">למשתמש הזה אין עדיין שרתים.</div>
+<div class="empty mb-5">
+  <div class="em-ico" aria-hidden="true">&#9889;</div>
+  <div class="fw-semibold mb-1" style="color:var(--text)">אין עדיין שרתים</div>
+  <div>למשתמש הזה עוד לא נוצרו שרתים.</div>
+</div>
 {% endif %}
 {% endblock %}"""
 
