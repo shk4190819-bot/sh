@@ -58,6 +58,8 @@ app.config.update(
     # מסדי נתונים חיצוניים סוגרים חיבורים לא פעילים; זה בודק ומחדש חיבור לפני שימוש
     SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 280},
     MAX_CONTENT_LENGTH=2 * 1024 * 1024,
+    # שם ייחודי (לא "session" של Flask) כדי שקוד משתמש יוכל להשתמש בשם "session" בלי להתנגש במערכת הניהול
+    SESSION_COOKIE_NAME="sh_admin_session",
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     # לפיתוח מקומי בלי HTTPS: INSECURE_COOKIES=1
@@ -853,6 +855,24 @@ def timeago(dt):
     return dt.strftime("%d/%m/%Y")
 
 
+def strip_admin_cookie_from_request(environ):
+    """מסיר את session cookie של מערכת הניהול מהבקשה לפני שהיא מגיעה לקוד משתמש (שאר העוגיות והכותרות נשארות)."""
+    kept = [c for c in environ.get("HTTP_COOKIE", "").split(";") if c.split("=", 1)[0].strip() != app.config["SESSION_COOKIE_NAME"]]
+    if "".join(kept).strip():
+        environ["HTTP_COOKIE"] = ";".join(kept).strip()
+    else:
+        environ.pop("HTTP_COOKIE", None)
+
+
+def strip_admin_cookie_from_response(response):
+    """מסיר Set-Cookie שמנסה להגדיר או למחוק את session cookie של מערכת הניהול (שאר ה-Set-Cookie נשארים)."""
+    cookies = response.headers.getlist("Set-Cookie")
+    del response.headers["Set-Cookie"]
+    for cookie in cookies:
+        if cookie.split("=", 1)[0].strip() != app.config["SESSION_COOKIE_NAME"]:
+            response.headers.add("Set-Cookie", cookie)
+
+
 @app.route("/<username>/<route_name>", defaults={"rest": ""}, methods=HTTP_METHODS, strict_slashes=False)
 @app.route("/<username>/<route_name>/<path:rest>", methods=HTTP_METHODS)
 @csrf.exempt  # ה-webhooks החיצוניים לא יכולים לשלוח CSRF token
@@ -874,7 +894,9 @@ def dispatch(username, route_name, rest):
         environ = request.environ.copy()
         environ["SCRIPT_NAME"] = request.script_root + f"/{username}/{route_name}"
         environ["PATH_INFO"] = "/" + rest
+        strip_admin_cookie_from_request(environ)
         response = Response.from_app(sub, environ, buffered=True)
+        strip_admin_cookie_from_response(response)
     except Exception:
         app.logger.exception("Sub-server failed: %s", route.full_path)
         record_log(route.id, f"Method: {request.method} | Status: 502 | IP: {request.remote_addr} | load/run error")
