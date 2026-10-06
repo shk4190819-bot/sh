@@ -148,7 +148,15 @@ def handle_user_error(e):
     if current_user():
         flash(str(e), "danger")
         if request.endpoint == "deploy_server":
-            return redirect(url_for("new_server"))
+            # נשארים בטופס עם כל מה שהוזן, כדי שלא יאבד (מקביל ל-edit_route)
+            return render_template(
+                "new.html",
+                form=request.form,
+                providers=ai_providers.PROVIDERS,
+                saved_providers={k.provider for k in current_user().api_keys},
+                max_code_chars=MAX_CODE_CHARS,
+                max_ai_chars=MAX_AI_CODE_CHARS,
+            ), 400
         if request.endpoint in ("update_key", "update_github"):
             return redirect(url_for("account"))
         return redirect(url_for("index"))
