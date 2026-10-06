@@ -45,7 +45,9 @@ class Route(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     route_name = db.Column(db.String(40), nullable=False)
-    full_path = db.Column(db.String(150), unique=True, nullable=False)
+    full_path = db.Column(db.String(150), unique=True, nullable=False)  # הכתובת הציבורית: /<route_name> (ייחודית גלובלית)
+    # הכתובת הישנה (/<username>/<route_name>), נשמרת במיגרציה כדי שקישורים קיימים ימשיכו לעבוד (LEGACY_USER_URLS)
+    legacy_path = db.Column(db.String(150), nullable=True, index=True)
     source_lang = db.Column(db.String(30), nullable=True)
 
     # pending = ממתין לאישור מנהל | active = פעיל | rejected = נדחה
