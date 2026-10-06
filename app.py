@@ -8,6 +8,7 @@ import re
 import secrets
 from functools import wraps
 from types import MappingProxyType, ModuleType
+from urllib.parse import quote as url_quote
 
 from authlib.integrations.flask_client import OAuth
 from cryptography.fernet import Fernet, InvalidToken
@@ -897,6 +898,43 @@ def record_log(route_id, message):
         app.logger.exception("Failed to write log")
 
 
+def _log_text(value, limit):
+    """טקסט חופשי בשורת יומן: בלי מעברי שורה ובלי המפריד ' | ', כדי שהפענוח של השורה יישאר חד-משמעי."""
+    return re.sub(r"\s+", " ", str(value)).replace(" | ", " / ")[:limit]
+
+
+def build_request_log(status, error=None):
+    """שורת יומן לבקשה: Method | Status | IP | Path [| Error]. שלושת השדות הראשונים זהים לפורמט הישן, אז יומנים קיימים נשארים תקפים.
+    ה-path בלי query string (עלול להכיל טוקנים) ומקודד באחוזים, כך שאין בו מפריד ' | '."""
+    path = url_quote(request.path, safe="/:@!$&'()*+,;=-._~")[:200]
+    parts = [f"Method: {request.method}", f"Status: {status}", f"IP: {request.remote_addr}", f"Path: {path}"]
+    if error:
+        parts.append("Error: " + _log_text(error, 200))
+    return " | ".join(parts)
+
+
+_LOG_LABELS = (("Method: ", "method"), ("Status: ", "status"), ("IP: ", "ip"), ("Path: ", "path"), ("Error: ", "error"))
+
+
+def parse_log(message):
+    """מפענח הודעת יומן (חדשה או ישנה) ל-dict: method, status, ip, path, text. שדה חסר = מחרוזת ריקה.
+    ישן: 'Method: GET | Status: 200 | IP: x' (בלי path), או עם סיומת חופשית 'load/run error' (נכנסת ל-text).
+    הודעה שלא בפורמט הזה בכלל מוצגת כמו שהיא ב-text."""
+    entry = {"method": "", "status": "", "ip": "", "path": "", "error": ""}
+    extras = []
+    for part in (message or "").split(" | "):
+        for prefix, key in _LOG_LABELS:
+            if part.startswith(prefix) and not entry[key]:
+                entry[key] = part[len(prefix):]
+                break
+        else:
+            extras.append(part)
+    if not (entry["method"] and entry["status"]):
+        return {"method": "", "status": "", "ip": "", "path": "", "text": message or ""}
+    text = entry.pop("error") or " · ".join(extras)
+    return {**entry, "text": text}
+
+
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
 
@@ -995,11 +1033,15 @@ def dispatch(route_name, rest):
         response = Response.from_app(sub, environ, buffered=True)
         strip_admin_cookie_from_response(response)
         response.headers["X-Content-Type-Options"] = "nosniff"
-    except Exception:
+    except Exception as exc:
         app.logger.exception("Sub-server failed: %s", route.full_path)
-        record_log(route.id, f"Method: {request.method} | Status: 502 | IP: {request.remote_addr} | load/run error")
+        try:
+            detail = f"load/run error: {type(exc).__name__}: {exc}"
+        except Exception:  # __str__ של החריגה עצמה נכשל: לא נהפוך את ה-502 ל-500
+            detail = f"load/run error: {type(exc).__name__}"
+        record_log(route.id, build_request_log(502, detail))
         abort(502)
-    record_log(route.id, f"Method: {request.method} | Status: {response.status_code} | IP: {request.remote_addr}")
+    record_log(route.id, build_request_log(response.status_code))
     return response
 
 
@@ -1193,8 +1235,9 @@ def view_logs(route_id):
     route = db.session.get(Route, route_id)
     if not route or (route.user_id != user.id and not user.is_admin):
         abort(404)
-    logs = Log.query.filter_by(route_id=route.id).order_by(Log.timestamp.desc()).limit(50).all()
-    return render_template("logs.html", route=route, logs=logs)
+    logs = Log.query.filter_by(route_id=route.id).order_by(Log.timestamp.desc(), Log.id.desc()).limit(50).all()
+    entries = [{**parse_log(lg.message), "ts": lg.timestamp} for lg in logs]
+    return render_template("logs.html", route=route, logs=logs, entries=entries)
 
 
 if __name__ == "__main__":
