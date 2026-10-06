@@ -130,32 +130,27 @@ details>summary{cursor:pointer;color:var(--muted)}
 .st-mute{color:var(--muted);background:var(--panel-2);border-color:var(--border)}
 .st-info{color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,transparent);border-color:color-mix(in srgb,var(--brand) 30%,transparent)}
 .code-view{direction:ltr;text-align:left;background:var(--panel-2);color:var(--text);white-space:pre-wrap;overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;margin:0;font-size:.82rem}
-.log-list{direction:ltr;border:1px solid var(--border);border-radius:var(--r);background:var(--panel);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.78rem;line-height:1.5}
-.log-day{padding:.2rem .8rem;font-size:.68rem;letter-spacing:.04em;color:var(--muted);background:var(--panel-2);border-bottom:1px solid var(--border)}
-.log-row{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.7rem;padding:.22rem .8rem;border-bottom:1px solid color-mix(in srgb,var(--border) 60%,transparent);border-inline-start:2px solid transparent}
+.log-list{direction:ltr;text-align:left;border:1px solid var(--border);border-radius:var(--r);background:var(--panel);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.8rem;line-height:1.45}
+.log-day{padding:.3rem .75rem;color:var(--muted);background:var(--panel-2);font-size:.72rem;border-bottom:1px solid var(--border)}
+.log-row{display:grid;grid-template-columns:4.4rem 3.4rem 2.3rem minmax(0,1fr) auto;gap:.2rem .75rem;align-items:baseline;padding:.28rem .75rem;border-bottom:1px solid var(--border);border-inline-start:3px solid transparent}
 .log-row:last-child{border-bottom:0}
-.log-row:hover{background:color-mix(in srgb,var(--text) 4.5%,transparent)}
-.log-row.is-5{border-inline-start-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,transparent)}
-.log-row.is-5:hover{background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.log-t{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.log-m{min-width:6ch;color:var(--text);opacity:.8;white-space:nowrap}
-.log-s{min-width:3ch;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.lg-2{color:color-mix(in srgb,var(--ok) 78%,#000)}
-.lg-3{color:#2563eb}
-.lg-4{color:color-mix(in srgb,var(--warn) 80%,#000)}
-.lg-5{color:var(--bad)}
-.lg-x{color:var(--muted)}
-[data-bs-theme=dark] .lg-2{color:var(--ok)}
-[data-bs-theme=dark] .lg-3{color:#60a5fa}
-[data-bs-theme=dark] .lg-4{color:var(--warn)}
-.log-msg{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;color:var(--text)}
-.log-row.is-5 .log-msg{color:var(--bad)}
-.log-ip{font-size:.7rem;color:var(--muted);white-space:nowrap}
-.log-row.is-raw .log-msg{color:var(--muted)}
+.log-row:hover{background:color-mix(in srgb,var(--text) 4%,transparent)}
+.log-row.is-5{border-inline-start-color:var(--bad);background:var(--bad-bg)}
+.lg-time{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.lg-method{font-weight:600}
+.lg-st{font-weight:600;font-variant-numeric:tabular-nums}
+.lg-st.s-2{color:var(--ok)}.lg-st.s-3{color:var(--brand)}.lg-st.s-4{color:var(--warn)}.lg-st.s-5{color:var(--bad)}
+.lg-body{min-width:0;overflow-wrap:anywhere}
+.lg-path{color:var(--text)}
+.lg-msg{color:var(--muted);unicode-bidi:plaintext}
+.lg-path+.lg-msg{margin-inline-start:.6rem}
+.lg-msg.is-err{color:var(--bad)}
+.lg-ip{grid-column:5;color:var(--muted);font-size:.72rem;white-space:nowrap}
 @media (max-width:640px){
-  .log-row{padding:.4rem .7rem;row-gap:.05rem}
-  .log-msg,.log-ip{flex:1 1 100%}
-  .log-ip{order:5}
+  .log-row{grid-template-columns:auto auto 1fr;gap:.1rem .6rem}
+  .lg-body,.lg-ip{grid-column:1/-1}
+  .lg-path,.lg-msg{display:block}
+  .lg-path+.lg-msg{margin-inline-start:0}
 }
 .acct{padding:1.25rem 1.4rem;margin-bottom:1rem}
 .acct-head{display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem}
@@ -582,37 +577,38 @@ REVIEW = """{% extends 'base.html' %}
 LOGS = """{% extends 'service.html' %}
 {% block title %}יומנים{% endblock %}
 {% block service_content %}
-{% set ns = namespace(e4=0, e5=0) %}
-{% for log in logs %}{% set p = log.message.split(' | ') %}{% if p|length >= 2 and p[0].startswith('Method: ') and p[1].startswith('Status: ') %}{% set c = p[1][8:]|trim %}{% if c[:1] == '5' %}{% set ns.e5 = ns.e5 + 1 %}{% elif c[:1] == '4' %}{% set ns.e4 = ns.e4 + 1 %}{% endif %}{% endif %}{% endfor %}
+{% set ns = namespace(e4=0, e5=0, day='') %}
+{% for e in entries %}{% if e.status[:1] == '5' %}{% set ns.e5 = ns.e5 + 1 %}{% elif e.status[:1] == '4' %}{% set ns.e4 = ns.e4 + 1 %}{% endif %}{% endfor %}
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h5 class="fw-semibold mb-0">יומנים</h5>
-    {% if logs %}<div class="small text-muted mt-1 d-flex flex-wrap gap-2 align-items-center"><span>{{ logs|length }} רשומות אחרונות</span>{% if ns.e4 %}<span class="lg-4 fw-semibold" dir="ltr">{{ ns.e4 }} &times; 4xx</span>{% endif %}{% if ns.e5 %}<span class="lg-5 fw-semibold" dir="ltr">{{ ns.e5 }} &times; 5xx</span>{% endif %}</div>{% endif %}
+    {% if entries %}<div class="d-flex gap-2 flex-wrap mt-1 small"><span class="text-muted">{{ entries|length }} בקשות אחרונות · שעות ב-UTC</span>{% if ns.e5 %}<span class="st st-bad">{{ ns.e5 }} שגיאות שרת</span>{% endif %}{% if ns.e4 %}<span class="st st-warn">{{ ns.e4 }} שגיאות לקוח</span>{% endif %}</div>{% endif %}
   </div>
   <div class="d-flex align-items-center gap-3">
     <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label small text-muted" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
     <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
   </div>
 </div>
-{% if logs %}
-{% set d = namespace(last='') %}
-<div class="log-list" role="log" aria-label="בקשות אחרונות לשרת">
-  {% for log in logs %}
-  {% set day = log.timestamp.strftime('%Y-%m-%d') %}
-  {% if day != d.last %}{% set d.last = day %}<div class="log-day">{{ day }} UTC</div>{% endif %}
-  {% set parts = log.message.split(' | ') %}
-  {% set parsed = parts|length >= 2 and parts[0].startswith('Method: ') and parts[1].startswith('Status: ') %}
-  {% set code = parts[1][8:]|trim if parsed else '' %}
-  {% set x = namespace(ip='', extra=[]) %}
-  {% if parsed %}{% for part in parts[2:] %}{% if part.startswith('IP: ') and not x.ip %}{% set x.ip = part[4:] %}{% else %}{% set x.extra = x.extra + [part] %}{% endif %}{% endfor %}{% endif %}
-  <div class="log-row{% if code[:1] == '5' %} is-5{% endif %}{% if not parsed %} is-raw{% endif %}" title="{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC"><span class="log-t">{{ log.timestamp.strftime('%H:%M:%S') }}</span>{% if parsed %}<span class="log-m">{{ parts[0][8:] }}</span><span class="log-s {% if code[:1] == '2' %}lg-2{% elif code[:1] == '3' %}lg-3{% elif code[:1] == '4' %}lg-4{% elif code[:1] == '5' %}lg-5{% else %}lg-x{% endif %}">{{ code }}</span>{% if x.extra %}<span class="log-msg">{{ x.extra|join(' · ') }}</span>{% endif %}{% if x.ip %}<span class="log-ip">{{ x.ip }}</span>{% endif %}{% else %}<span class="log-msg">{{ log.message }}</span>{% endif %}</div>
+{% if entries %}
+<div class="log-list" aria-label="בקשות אחרונות לשרת">
+  {% for e in entries %}
+  {% set sc = e.status[:1] %}
+  {% set day = e.ts.strftime('%Y-%m-%d') %}
+  {% if day != ns.day %}{% set ns.day = day %}<div class="log-day">{{ day }}</div>{% endif %}
+  <div class="log-row{% if sc == '5' %} is-5{% endif %}" title="{{ day }} {{ e.ts.strftime('%H:%M:%S') }} UTC">
+    <span class="lg-time">{{ e.ts.strftime('%H:%M:%S') }}</span>
+    <span class="lg-method">{{ e.method }}</span>
+    <span class="lg-st{% if sc in ('2','3','4','5') %} s-{{ sc }}{% endif %}">{{ e.status }}</span>
+    {% if e.path or e.text %}<div class="lg-body">{% if e.path %}<span class="lg-path">{{ e.path }}</span>{% endif %}{% if e.text %}<span class="lg-msg{% if sc == '5' %} is-err{% endif %}">{{ e.text }}</span>{% endif %}</div>{% endif %}
+    {% if e.ip %}<span class="lg-ip">{{ e.ip }}</span>{% endif %}
+  </div>
   {% endfor %}
 </div>
 {% else %}
 <div class="empty">
   <div class="em-ico" aria-hidden="true">&#9776;</div>
-  <div class="fw-semibold mb-1" style="color:var(--text)">אין עדיין בקשות להצגה</div>
-  <div>כשיגיעו בקשות לשרת הזה הן יופיעו כאן, מהחדשה לישנה. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת כדי לראות רשומה ראשונה.</div>
+  <div class="fw-semibold mb-1" style="color:var(--text)">עוד לא הגיעו בקשות לשרת הזה</div>
+  <div>בקשות חדשות יופיעו כאן. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת.</div>
 </div>
 {% endif %}
 {% endblock %}
