@@ -130,11 +130,25 @@ details>summary{cursor:pointer;color:var(--muted)}
 .st-mute{color:var(--muted);background:var(--panel-2);border-color:var(--border)}
 .st-info{color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,transparent);border-color:color-mix(in srgb,var(--brand) 30%,transparent)}
 .code-view{direction:ltr;text-align:left;background:var(--panel-2);color:var(--text);white-space:pre-wrap;overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;margin:0;font-size:.82rem}
-.log-list{direction:ltr;text-align:left;border:1px solid var(--border);border-radius:var(--r);background:var(--panel);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.8rem;line-height:1.45}
-.log-day{padding:.3rem .75rem;color:var(--muted);background:var(--panel-2);font-size:.72rem;border-bottom:1px solid var(--border)}
-.log-row{display:grid;grid-template-columns:4.4rem 3.4rem 2.3rem minmax(0,1fr) auto;gap:.2rem .75rem;align-items:baseline;padding:.28rem .75rem;border-bottom:1px solid var(--border);border-inline-start:3px solid transparent}
-.log-row:last-child{border-bottom:0}
-.log-row:hover{background:color-mix(in srgb,var(--text) 4%,transparent)}
+.lv{position:relative}
+.lv-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem 1rem;margin-bottom:.6rem}
+.lv-title{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem .7rem}
+.lv-count{color:var(--muted);font-size:.8rem}
+.lv-chip{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.72rem;font-weight:600;border-radius:5px;padding:.05rem .45rem}
+.lv-chip.s-5{color:var(--bad);background:var(--bad-bg)}.lv-chip.s-4{color:var(--warn);background:var(--warn-bg)}
+.lv-ctrl{display:flex;align-items:center;gap:.9rem}
+.lv-live{display:inline-flex;align-items:center;gap:.5rem}
+.lv-live .form-check-label{color:var(--muted);font-size:.8rem;cursor:pointer}
+.lv-live.is-on .form-check-label{color:var(--ok)}
+.lv-live.is-on .form-check-label::before{content:'';display:inline-block;width:7px;height:7px;margin-inline-end:.4rem;border-radius:50%;background:var(--ok);animation:lvPulse 1.6s ease-in-out infinite}
+@keyframes lvPulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.lv-live.is-on .form-check-label::before{animation:none}}
+.lv-scroll{height:clamp(300px,calc(100vh - 260px),780px);overflow:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--panel)}
+.lv-scroll:focus-visible{outline-offset:-2px}
+.log-list{direction:ltr;text-align:left;min-width:0;padding-bottom:.35rem;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem;line-height:1.5}
+.log-day{position:sticky;top:0;z-index:1;padding:.3rem .75rem;color:var(--muted);background:var(--panel-2);font-size:.7rem;border-bottom:1px solid var(--border)}
+.log-row{display:grid;grid-template-columns:4.2rem 3.2rem 2.2rem minmax(0,1fr) auto;gap:.1rem .7rem;align-items:baseline;padding:.12rem .75rem;border-inline-start:3px solid transparent}
+.log-row:hover{background:color-mix(in srgb,var(--text) 5%,transparent)}
 .log-row.is-5{border-inline-start-color:var(--bad);background:var(--bad-bg)}
 .lg-time{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .lg-method{font-weight:600}
@@ -146,8 +160,11 @@ details>summary{cursor:pointer;color:var(--muted)}
 .lg-path+.lg-msg{margin-inline-start:.6rem}
 .lg-msg.is-err{color:var(--bad)}
 .lg-ip{grid-column:5;color:var(--muted);font-size:.72rem;white-space:nowrap}
+.lv-jump{position:absolute;inset-inline-end:1rem;bottom:1rem;display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;padding:.3rem .7rem;border-radius:999px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);box-shadow:0 6px 20px -8px rgba(0,0,0,.5);cursor:pointer}
+.lv-jump:hover{border-color:var(--muted)}.lv-jump[hidden]{display:none}
 @media (max-width:640px){
-  .log-row{grid-template-columns:auto auto 1fr;gap:.1rem .6rem}
+  .lv-scroll{height:clamp(280px,calc(100dvh - 300px),640px)}
+  .log-row{grid-template-columns:auto auto 1fr;gap:.05rem .6rem;padding-block:.3rem;border-bottom:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
   .lg-body,.lg-ip{grid-column:1/-1}
   .lg-path,.lg-msg{display:block}
   .lg-path+.lg-msg{margin-inline-start:0}
@@ -617,48 +634,66 @@ LOGS = """{% extends 'service.html' %}
 {% block service_content %}
 {% set ns = namespace(e4=0, e5=0, day='') %}
 {% for e in entries %}{% if e.status[:1] == '5' %}{% set ns.e5 = ns.e5 + 1 %}{% elif e.status[:1] == '4' %}{% set ns.e4 = ns.e4 + 1 %}{% endif %}{% endfor %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h5 class="fw-semibold mb-0">יומנים</h5>
-    {% if entries %}<div class="d-flex gap-2 flex-wrap mt-1 small"><span class="text-muted">{{ entries|length }} בקשות אחרונות · שעות ב-UTC</span>{% if ns.e5 %}<span class="st st-bad">{{ ns.e5 }} שגיאות שרת</span>{% endif %}{% if ns.e4 %}<span class="st st-warn">{{ ns.e4 }} שגיאות לקוח</span>{% endif %}</div>{% endif %}
+<div class="lv">
+  <div class="lv-bar">
+    <div class="lv-title">
+      <h5 class="fw-semibold mb-0">יומנים</h5>
+      {% if entries %}<span class="lv-count">{{ entries|length }} בקשות אחרונות · שעות ב-UTC</span>{% if ns.e5 %}<span class="lv-chip s-5">{{ ns.e5 }} × 5xx</span>{% endif %}{% if ns.e4 %}<span class="lv-chip s-4">{{ ns.e4 }} × 4xx</span>{% endif %}{% endif %}
+    </div>
+    <div class="lv-ctrl">
+      <div class="form-check form-switch m-0 lv-live" id="lvLive"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
+      <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
+    </div>
   </div>
-  <div class="d-flex align-items-center gap-3">
-    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label small text-muted" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
-    <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
+  {% if entries %}
+  <div class="lv-scroll" id="lvScroll" tabindex="0" role="log" aria-label="בקשות אחרונות לשרת">
+    <div class="log-list">
+      {% for e in entries|reverse %}
+      {% set sc = e.status[:1] %}
+      {% set day = e.ts.strftime('%Y-%m-%d') %}
+      {% if day != ns.day %}{% set ns.day = day %}<div class="log-day">{{ day }}</div>{% endif %}
+      <div class="log-row{% if sc == '5' %} is-5{% endif %}" title="{{ day }} {{ e.ts.strftime('%H:%M:%S') }} UTC">
+        <span class="lg-time">{{ e.ts.strftime('%H:%M:%S') }}</span>
+        <span class="lg-method">{{ e.method }}</span>
+        <span class="lg-st{% if sc in ('2','3','4','5') %} s-{{ sc }}{% endif %}">{{ e.status }}</span>
+        {% if e.path or e.text %}<div class="lg-body">{% if e.path %}<span class="lg-path">{{ e.path }}</span>{% endif %}{% if e.text %}<span class="lg-msg{% if sc == '5' %} is-err{% endif %}">{{ e.text }}</span>{% endif %}</div>{% endif %}
+        {% if e.ip %}<span class="lg-ip">{{ e.ip }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
   </div>
-</div>
-{% if entries %}
-<div class="log-list" aria-label="בקשות אחרונות לשרת">
-  {% for e in entries %}
-  {% set sc = e.status[:1] %}
-  {% set day = e.ts.strftime('%Y-%m-%d') %}
-  {% if day != ns.day %}{% set ns.day = day %}<div class="log-day">{{ day }}</div>{% endif %}
-  <div class="log-row{% if sc == '5' %} is-5{% endif %}" title="{{ day }} {{ e.ts.strftime('%H:%M:%S') }} UTC">
-    <span class="lg-time">{{ e.ts.strftime('%H:%M:%S') }}</span>
-    <span class="lg-method">{{ e.method }}</span>
-    <span class="lg-st{% if sc in ('2','3','4','5') %} s-{{ sc }}{% endif %}">{{ e.status }}</span>
-    {% if e.path or e.text %}<div class="lg-body">{% if e.path %}<span class="lg-path">{{ e.path }}</span>{% endif %}{% if e.text %}<span class="lg-msg{% if sc == '5' %} is-err{% endif %}">{{ e.text }}</span>{% endif %}</div>{% endif %}
-    {% if e.ip %}<span class="lg-ip">{{ e.ip }}</span>{% endif %}
+  <button type="button" class="lv-jump" id="lvJump" hidden>לסוף היומן &#8595;</button>
+  {% else %}
+  <div class="empty">
+    <div class="em-ico" aria-hidden="true">&#9776;</div>
+    <div class="fw-semibold mb-1" style="color:var(--text)">עוד לא הגיעו בקשות לשרת הזה</div>
+    <div>בקשות חדשות יופיעו כאן. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת.</div>
   </div>
-  {% endfor %}
+  {% endif %}
 </div>
-{% else %}
-<div class="empty">
-  <div class="em-ico" aria-hidden="true">&#9776;</div>
-  <div class="fw-semibold mb-1" style="color:var(--text)">עוד לא הגיעו בקשות לשרת הזה</div>
-  <div>בקשות חדשות יופיעו כאן. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת.</div>
-</div>
-{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
 (function(){
-  var cb=document.getElementById('autoRefresh'), t=null;
+  var cb=document.getElementById('autoRefresh'), live=document.getElementById('lvLive'), t=null;
+  var sc=document.getElementById('lvScroll'), jump=document.getElementById('lvJump'), KEY='sh-logs-scroll', RID={{ route.id }};
+  function atBottom(){return sc.scrollHeight-sc.scrollTop-sc.clientHeight<24;}
+  function save(){if(!sc)return;try{sessionStorage.setItem(KEY,JSON.stringify({rid:RID,bottom:atBottom(),top:sc.scrollTop}));}catch(e){}}
+  if(sc){
+    var st=null,nav=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
+    try{st=JSON.parse(sessionStorage.getItem(KEY)||'null');}catch(e){}
+    if(st&&st.rid===RID&&!st.bottom&&nav&&nav.type==='reload'){sc.scrollTop=st.top;}else{sc.scrollTop=sc.scrollHeight;}
+    var upd=function(){jump.hidden=atBottom();};
+    sc.addEventListener('scroll',upd);upd();
+    jump.addEventListener('click',function(){sc.scrollTo({top:sc.scrollHeight,behavior:'smooth'});});
+    window.addEventListener('pagehide',save);
+  }
   try{cb.checked=sessionStorage.getItem('sh-auto-logs')==='1';}catch(e){}
   function apply(){
     try{sessionStorage.setItem('sh-auto-logs',cb.checked?'1':'0');}catch(e){}
+    live.classList.toggle('is-on',cb.checked);
     if(t){clearInterval(t);t=null;}
-    if(cb.checked){t=setInterval(function(){location.reload();},5000);}
+    if(cb.checked){t=setInterval(function(){save();location.reload();},5000);}
   }
   cb.addEventListener('change',apply); apply();
 })();
