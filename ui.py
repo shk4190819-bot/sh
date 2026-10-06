@@ -13,8 +13,8 @@ BASE = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <style>
-:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f6f6f8;--panel:#ffffff;--panel-2:#f0f0f4;--border:#e2e3e9;--text:#14151a;--muted:#6b6f7b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r:10px;--r-lg:14px;--ok-bg:color-mix(in srgb,var(--ok) 14%,transparent);--warn-bg:color-mix(in srgb,var(--warn) 14%,transparent);--bad-bg:color-mix(in srgb,var(--bad) 14%,transparent)}
-[data-bs-theme=dark]{--brand:#7377ff;--brand-d:#8a8dff;--bg:#0c0d10;--panel:#131418;--panel-2:#1b1c22;--border:#272930;--text:#e7e8ec;--muted:#8b8f9b;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f8f8fa;--panel:#ffffff;--panel-2:#f1f1f5;--border:#e4e5ea;--text:#16171c;--muted:#686c78;--side-w:236px;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r:8px;--r-lg:12px;--ok-bg:color-mix(in srgb,var(--ok) 14%,transparent);--warn-bg:color-mix(in srgb,var(--warn) 14%,transparent);--bad-bg:color-mix(in srgb,var(--bad) 14%,transparent)}
+[data-bs-theme=dark]{--brand:#7377ff;--brand-d:#8a8dff;--bg:#0a0b0e;--panel:#101115;--panel-2:#17181d;--border:#22242b;--text:#e8e9ed;--muted:#8c909c;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
 body{font-family:'Heebo',system-ui,sans-serif;background:var(--bg);color:var(--text);--bs-body-bg:var(--bg);--bs-body-color:var(--text);--bs-border-color:var(--border);--bs-secondary-color:var(--muted);--bs-tertiary-bg:var(--panel-2);--bs-emphasis-color:var(--text)}
 .text-muted{color:var(--muted)!important}
 a{color:var(--brand)}a:hover{color:var(--brand-d)}
@@ -228,20 +228,58 @@ details>summary{cursor:pointer;color:var(--muted)}
 .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 30px 70px -40px color-mix(in srgb,var(--brand) 55%,transparent)}
 .btn-oauth{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.62rem;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);font-weight:500;text-decoration:none;font-size:.92rem}
 .btn-oauth:hover{border-color:var(--muted);color:var(--text)}
+/* ===== מעטפת בסגנון פלטפורמת hosting: סרגל צד קבוע, טיפוגרפיה, כפתורים, מצבי טעינה ===== */
+body{font-size:.94rem;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,h4,h5,h6{letter-spacing:-.005em}
+.card,.srv-list,.tbl,.panel,.attn,.actionbar,.notice,.empty,.auth-card{border-radius:var(--r)}
+.btn{border-radius:var(--r-sm);font-weight:500;transition:background-color .12s,border-color .12s,color .12s}
+.btn-sm{font-size:.82rem}
+.btn:disabled,.btn.disabled{opacity:.55}
+.btn.js-load:disabled::before{content:'';display:inline-block;width:.8em;height:.8em;margin-inline-end:.45rem;vertical-align:-.1em;border:2px solid currentColor;border-inline-end-color:transparent;border-radius:50%;animation:shspin .7s linear infinite}
+@keyframes shspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.btn.js-load:disabled::before{animation-duration:2s}}
+.alert{padding:.6rem .9rem;font-size:.88rem;border-radius:var(--r)}
+.tbl-head{background:var(--panel-2)}
+.page-head h1{font-size:1.4rem;letter-spacing:-.01em}
+.topbar{margin-bottom:1.25rem}
+.topnav a{display:inline-flex;align-items:center;gap:.5rem}
+.topnav .ni{display:none}
+.av-name{display:none}
+.topnav .badge{margin-inline-start:auto}
+@media (min-width:992px){
+  body.has-side main.container{width:auto;max-width:1180px!important;margin-inline:0;margin-inline-start:var(--side-w);padding:1.75rem 2rem 3rem}
+  body.has-side .topbar{position:fixed;top:0;bottom:0;inset-inline-start:0;width:var(--side-w);margin:0;border-bottom:0;border-inline-end:1px solid var(--border);overflow-y:auto;z-index:100}
+  .topbar .inner{max-width:none!important;width:100%;min-height:100%;margin:0;padding:1rem .75rem;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:.25rem}
+  .topbar .tb-brand{padding:.25rem .5rem .9rem;gap:.6rem}
+  .topbar .tb-brand .d-none{display:inline!important}
+  .topbar .tb-actions{display:contents}
+  .tb-new{order:1}.tb-new .btn{width:100%;padding:.45rem .75rem}
+  .topnav{order:2;flex-direction:column;gap:2px;margin-top:.9rem;overflow:visible}
+  .topnav a{padding:.5rem .7rem;font-size:.9rem;gap:.65rem}
+  .topnav .ni{display:block;flex:none;opacity:.8}
+  .topnav a.on{background:var(--panel-2);color:var(--text);font-weight:500;box-shadow:inset 0 0 0 1px var(--border)}
+  .topnav a.on .ni{color:var(--brand);opacity:1}
+  .tb-user{order:3;margin-top:auto;padding-top:.75rem;border-top:1px solid var(--border)}
+  .tb-user .avatar{width:100%;height:auto;border-radius:var(--r-sm);border-color:transparent;background:transparent;justify-content:flex-start;gap:.65rem;padding:.4rem .5rem;font-weight:500;font-size:.88rem}
+  .tb-user .avatar:hover{background:var(--panel-2)}
+  .av-i{width:28px;height:28px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600;flex:none}
+  .av-name{display:inline;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .svc-layout{grid-template-columns:176px minmax(0,1fr);gap:1.75rem}
+}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </style>
 </head>
-<body>
+<body{% if current_user and (current_user.is_approved or current_user.is_admin) %} class="has-side"{% endif %}>
 {% if current_user and (current_user.is_approved or current_user.is_admin) %}
-<header class="topbar mb-4"><div class="container inner" style="max-width:1180px">
+<header class="topbar"><div class="container inner" style="max-width:1180px">
   <a href="{{ url_for('index') }}" class="tb-brand"><span class="brand-mark brand-sm">SH</span><span class="d-none d-sm-inline">מערכת שרתים</span></a>
   <nav class="topnav" aria-label="ניווט ראשי">
-    <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %}on{% endif %}"{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %} aria-current="page"{% endif %}>שרתים</a>
-    {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}"{% if request.endpoint in ('admin_users','admin_user') %} aria-current="page"{% endif %}>משתמשים{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
-    <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}"{% if request.endpoint == 'account' %} aria-current="page"{% endif %}>הגדרות חשבון</a>
+    <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %}on{% endif %}"{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %} aria-current="page"{% endif %}><svg class="ni" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="14" height="5" rx="1.5"/><rect x="3" y="11.5" width="14" height="5" rx="1.5"/><path d="M6 6h.01M6 14h.01"/></svg><span>שרתים</span></a>
+    {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}"{% if request.endpoint in ('admin_users','admin_user') %} aria-current="page"{% endif %}><svg class="ni" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="3"/><path d="M4 16.5c.8-3 3-4.5 6-4.5s5.2 1.5 6 4.5"/></svg><span>משתמשים</span>{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
+    <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}"{% if request.endpoint == 'account' %} aria-current="page"{% endif %}><svg class="ni" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/></svg><span>הגדרות חשבון</span></a>
   </nav>
   <div class="tb-actions">
-    <div class="dropdown">
+    <div class="dropdown tb-new">
       <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="dropdown" aria-expanded="false">חדש +</button>
       <ul class="dropdown-menu dropdown-menu-end" style="min-width:230px">
         <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=paste">שרת מקוד שהודבק</a></li>
@@ -249,8 +287,8 @@ details>summary{cursor:pointer;color:var(--muted)}
         <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=github">קובץ בודד מ-GitHub</a></li>
       </ul>
     </div>
-    <div class="dropdown">
-      <button type="button" class="avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="תפריט משתמש">{{ current_user.username[:1]|upper }}</button>
+    <div class="dropdown tb-user">
+      <button type="button" class="avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="תפריט משתמש"><span class="av-i">{{ current_user.username[:1]|upper }}</span><span class="av-name ltr">{{ current_user.username }}</span></button>
       <ul class="dropdown-menu dropdown-menu-end" style="min-width:210px">
         <li class="px-2 py-1"><div class="fw-semibold ltr">{{ current_user.username }}</div><div class="small text-muted">{% if current_user.is_admin %}מנהל{% else %}משתמש{% endif %}</div></li>
         <li><hr class="dropdown-divider" style="border-color:var(--border)"></li>
@@ -270,7 +308,7 @@ details>summary{cursor:pointer;color:var(--muted)}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-(function(){var tb=document.querySelector('.topbar');if(!tb)return;function h(){document.documentElement.style.setProperty('--tb-h',tb.offsetHeight+'px');}h();window.addEventListener('resize',h);})();
+(function(){var tb=document.querySelector('.topbar');if(!tb)return;function h(){var side=window.matchMedia('(min-width:992px)').matches;document.documentElement.style.setProperty('--tb-h',(side?0:tb.offsetHeight)+'px');}h();window.addEventListener('resize',h);})();
 document.addEventListener('show.bs.dropdown',function(e){var r=e.target.closest('.srv');if(r)r.classList.add('is-open');});
 document.addEventListener('hidden.bs.dropdown',function(e){var r=e.target.closest('.srv');if(r)r.classList.remove('is-open');});
 document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){
