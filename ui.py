@@ -251,7 +251,7 @@ LOGIN = """{% extends 'base.html' %}
         <input type="hidden" name="action" value="register">
         <label class="form-label">שם משתמש</label>
         <input type="text" name="username" class="form-control ltr" data-lower required pattern="[a-z][a-z0-9_]{2,29}" title="3 עד 30 תווים: אותיות אנגליות קטנות, ספרות או _, ומתחיל באות" autocomplete="username" autocapitalize="none" value="{% if tab == 'register' %}{{ prefill|default('') }}{% endif %}">
-        <div class="form-text mb-3">אנגלית קטנה, ספרות ו-_ בלבד. השם הופך לחלק מהכתובת של השרתים שלך.</div>
+        <div class="form-text mb-3">אנגלית קטנה, ספרות ו-_ בלבד. השם מזהה אותך במערכת ולא מופיע בכתובות השרתים.</div>
         <label class="form-label">סיסמה</label>
         <div class="input-group">
           <input type="password" name="password" class="form-control ltr" required minlength="8" autocomplete="new-password">
@@ -697,8 +697,8 @@ NEW = """{% extends 'base.html' %}
         <div class="row g-3 mb-3">
           <div class="col-sm-6">
             <label class="form-label">שם הנתיב</label>
-            <input type="text" name="route_name" class="form-control ltr" placeholder="hello" required data-lower pattern="[a-z0-9][a-z0-9_]{0,39}" title="אותיות אנגליות קטנות, ספרות או _ (עד 40 תווים)" autocapitalize="none">
-            <div class="form-text">הכתובת: <span class="ltr d-inline-block">/{{ current_user.username }}/<b id="rnPreview">...</b></span></div>
+            <input type="text" name="route_name" class="form-control ltr" placeholder="my-api" required data-lower maxlength="40" pattern="[a-z0-9][a-z0-9_\\-]{0,39}" title="אותיות אנגליות קטנות, ספרות, _ או - (עד 40 תווים). השם ייחודי לכל המשתמשים" autocapitalize="none">
+            <div class="form-text">הכתובת: <span class="ltr d-inline-block">{{ request.host_url.rstrip('/') }}/<b id="rnPreview">...</b></span> <span class="text-muted">· השם ייחודי לכל המשתמשים</span></div>
           </div>
           <div class="col-sm-6 paste-only">
             <label class="form-label">שפת הקוד שהדבקת</label>
@@ -907,13 +907,13 @@ LANDING = """{% extends 'base.html' %}
   </div>
 
   <div class="lp-demo" aria-hidden="true">
-    <div class="lp-demo-bar"><i></i><i></i><i></i><span>deploy · alice/hello</span></div>
+    <div class="lp-demo-bar"><i></i><i></i><i></i><span>deploy · hello</span></div>
     <div class="lp-demo-body">
       <div>$ <span class="hl">deploy</span> github.com/alice/hello</div>
       <div><span class="ok">&#10003;</span> Code validated</div>
       <div><span class="ok">&#10003;</span> Dependencies installed</div>
       <div><span class="ok">&#10003;</span> Environment variables loaded</div>
-      <div><span class="hl">/alice/hello</span><span class="lp-live"><span class="dot dot-ok"></span>Live</span></div>
+      <div><span class="hl">/hello</span><span class="lp-live"><span class="dot dot-ok"></span>Live</span></div>
     </div>
   </div>
 </section>
