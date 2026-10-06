@@ -14,7 +14,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from flask import Blueprint, Flask, Response, abort, flash, redirect, render_template, request, session, url_for
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from jinja2 import DictLoader
-from sqlalchemy import func as sa_func, inspect as sa_inspect, or_ as sa_or, text as sa_text
+from sqlalchemy import and_ as sa_and, func as sa_func, inspect as sa_inspect, or_ as sa_or, text as sa_text
+from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -23,6 +24,7 @@ import ai_providers
 import bundles
 import deps
 import github_client
+import route_names
 from models import ApiKey, EnvVar, Log, Route, RouteSource, User, db, utcnow
 from ui import TEMPLATES
 
@@ -83,6 +85,19 @@ def ensure_schema():
             db.session.commit()
         except Exception:  # worker אחר הספיק להוסיף את העמודה
             db.session.rollback()
+    # הכתובת הישנה של שרת (/<username>/<route_name>), נשמרת במיגרציה. העמודה והאינדקס נוצרים כאן; הנתונים רק במיגרציה
+    route_cols = {c["name"] for c in sa_inspect(db.engine).get_columns("routes")}
+    if "legacy_path" not in route_cols:
+        try:
+            db.session.execute(sa_text("ALTER TABLE routes ADD COLUMN legacy_path VARCHAR(150)"))
+            db.session.commit()
+        except Exception:  # worker אחר הספיק להוסיף את העמודה
+            db.session.rollback()
+    try:
+        db.session.execute(sa_text("CREATE INDEX IF NOT EXISTS ix_routes_legacy_path ON routes (legacy_path)"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 with app.app_context():
@@ -99,9 +114,9 @@ google = oauth.register(
 )
 
 USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,29}$")
-ROUTE_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,39}$")
+ROUTE_RE = route_names.ROUTE_RE  # [a-z0-9][a-z0-9_-]{0,39}
 LANG_RE = re.compile(r"^[\w+#.\- ]{1,30}$")
-RESERVED = {"admin", "auth", "login", "logout", "static", "settings", "deploy", "api", "review", "healthz", "new", "account", "pending"}
+RESERVED = set(route_names.RESERVED_STATIC | route_names.USERNAME_EXTRA_RESERVED)  # שמות משתמש שמורים. לשמות שרתים: reserved_route_names()
 PY_LANGS = {"python", "py", "python3", "flask"}
 # מגבלות אורך קוד (ניתנות לשינוי במשתני סביבה ב-Render)
 MAX_CODE_CHARS = int(os.environ.get("MAX_CODE_CHARS", "200000"))  # Python ישיר: נשמר כמו שהוא, בלי AI
@@ -405,6 +420,48 @@ def update_key():
 # ==========================================
 # 5. פריסה: תרגום (או Python ישיר) -> אישור מנהל -> הפעלה
 # ==========================================
+_reserved_cache = None
+
+
+def reserved_route_names():
+    """שמות שאסור לתת לשרת: הרשימה המפורשת + הסגמנט הראשון של כל route במערכת (נגזר מ-app.url_map).
+    מחושב בבקשה הראשונה (אחרי שכל ה-routes נרשמו) ונשמר."""
+    global _reserved_cache
+    if _reserved_cache is None:
+        derived = route_names.derive_reserved(app.url_map)
+        missing = derived - route_names.RESERVED_STATIC
+        if missing:  # route חדש נוסף למערכת: להוסיף ל-RESERVED_STATIC כדי שסקריפט המיגרציה ישמור עליו
+            app.logger.warning("System routes missing from route_names.RESERVED_STATIC: %s", sorted(missing))
+        _reserved_cache = frozenset(route_names.RESERVED_STATIC | derived)
+    return _reserved_cache
+
+
+def legacy_urls_enabled():
+    """כתובות /<username>/<route_name> הישנות. ברירת מחדל: פעיל. כיבוי: LEGACY_USER_URLS=0 (או false/no/off)."""
+    return (os.environ.get("LEGACY_USER_URLS") or "1").strip().lower() not in ("0", "false", "no", "off")
+
+
+def validate_route_name(raw):
+    """ולידציה מרכזית של שם שרת: פורמט, path traversal ושמות שמורים. מחזיר את השם המנורמל או זורק UserError."""
+    try:
+        return route_names.check_route_name((raw or "").strip().lower(), reserved_route_names())
+    except route_names.RouteNameError as e:
+        raise UserError(str(e))
+
+
+def assert_route_name_free(name):
+    """הכתובת הציבורית היא /<name> ולכן השם ייחודי גלובלית. UserError אם תפוס (ה-DB מגן בנוסף דרך full_path unique)."""
+    if Route.query.filter(sa_or(Route.full_path == f"/{name}", Route.route_name == name)).first():
+        raise UserError(f"השם {name} כבר תפוס. שמות שרתים ייחודיים לכל המשתמשים, בחר שם אחר.")
+    if legacy_urls_enabled():
+        prefix = f"/{name}/"
+        shadow = Route.query.filter(
+            sa_or(Route.legacy_path.startswith(prefix, autoescape=True), Route.full_path.startswith(prefix, autoescape=True))
+        ).first()
+        if shadow:  # השם הוא שם משתמש עם כתובות ישנות פעילות; שרת חדש בשם הזה היה מסתיר אותן
+            raise UserError(f"השם {name} תפוס (משמש כתובות ישנות של משתמש בשם הזה). בחר שם אחר.")
+
+
 def strip_fences(text):
     m = re.search(r"```(?:python|py)?\s*\n(.*?)```", text, re.DOTALL)
     return (m.group(1) if m else text).strip()
@@ -424,9 +481,11 @@ def validate_python(code):
 def deploy_server():
     user = current_user()
 
-    route_name = (request.form.get("route_name") or "").strip().lower()
-    if not ROUTE_RE.match(route_name):
-        raise UserError("שם נתיב: עד 40 תווים, אנגלית קטנה/ספרות/_ בלבד.")
+    route_name = validate_route_name(request.form.get("route_name"))
+    # פריסה חוזרת של שרת קיים של אותו משתמש מעדכנת אותו; שם חדש חייב להיות פנוי גלובלית (בודקים לפני קריאת ה-AI)
+    route = Route.query.filter_by(user_id=user.id, route_name=route_name).first()
+    if route is None:
+        assert_route_name_free(route_name)
 
     mode = request.form.get("source_mode")
     gh_meta = None
@@ -485,9 +544,8 @@ def deploy_server():
                 raise UserError(f"שגיאה מספק ה-AI: {e}")
         validate_python(final_code)
 
-    route = Route.query.filter_by(user_id=user.id, route_name=route_name).first()
     if not route:
-        route = Route(user_id=user.id, route_name=route_name, full_path=f"/{user.username}/{route_name}")
+        route = Route(user_id=user.id, route_name=route_name, full_path=f"/{route_name}")
         db.session.add(route)
     route.source_lang = source_lang
     route.pending_code = final_code
@@ -501,7 +559,11 @@ def deploy_server():
                 setattr(route.source, key, value)
     else:
         route.source = None  # הדבקה ידנית מנתקת את הקישור ל-GitHub
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:  # race: משתמש אחר תפס את השם בין הבדיקה לשמירה (full_path unique)
+        db.session.rollback()
+        raise UserError(f"השם {route_name} נתפס הרגע על ידי שרת אחר. בחר שם אחר.")
 
     activate(route)  # משתמש מאושר: השרת עולה מיד, בלי אישור מנהל
     flash(f"השרת פעיל בכתובת {route.full_path}", "success")
@@ -873,27 +935,54 @@ def strip_admin_cookie_from_response(response):
             response.headers.add("Set-Cookie", cookie)
 
 
-@app.route("/<username>/<route_name>", defaults={"rest": ""}, methods=HTTP_METHODS, strict_slashes=False)
-@app.route("/<username>/<route_name>/<path:rest>", methods=HTTP_METHODS)
+def _servable(query):
+    """שרת פעיל של משתמש מאושר (משתמש שהושעה: השרתים שלו לא מוגשים)."""
+    return query.filter(Route.status == "active", sa_or(User.is_approved.is_(True), User.is_admin.is_(True)))
+
+
+def find_route_by_name(name):
+    return _servable(Route.query.join(User).filter(Route.full_path == f"/{name}")).first()
+
+
+def find_route_by_legacy_path(path):
+    # legacy_path ריק = עדיין לא עברה מיגרציה, ואז full_path הוא עדיין הכתובת הישנה
+    cond = sa_or(Route.legacy_path == path, sa_and(Route.legacy_path.is_(None), Route.full_path == path))
+    return _servable(Route.query.join(User).filter(cond)).first()
+
+
+def resolve_route(first, rest):
+    """(route, script_name, path_info) או None. הכתובת החדשה /<route_name>/... קודמת; אחריה הישנה /<username>/<route_name>/..."""
+    route = find_route_by_name(first)
+    if route is not None:
+        return route, f"/{first}", "/" + rest
+    if legacy_urls_enabled() and rest:
+        second, _, subrest = rest.partition("/")
+        if ROUTE_RE.match(second):
+            legacy = f"/{first}/{second}"
+            route = find_route_by_legacy_path(legacy)
+            if route is not None:
+                return route, legacy, "/" + subrest
+    return None
+
+
+@app.route("/<route_name>", defaults={"rest": ""}, methods=HTTP_METHODS, strict_slashes=False)
+@app.route("/<route_name>/<path:rest>", methods=HTTP_METHODS)
 @csrf.exempt  # ה-webhooks החיצוניים לא יכולים לשלוח CSRF token
-def dispatch(username, route_name, rest):
-    route = (
-        Route.query.join(User)
-        .filter(
-            User.username == username,
-            Route.route_name == route_name,
-            Route.status == "active",
-            sa_or(User.is_approved.is_(True), User.is_admin.is_(True)),  # משתמש שהושעה: השרתים שלו לא מוגשים
-        )
-        .first()
-    )
-    if route is None or not route.live_code:
+def dispatch(route_name, rest):
+    # routes של המערכת (/edit/<abc>, /deploy ב-GET וכו') שנפלו לכאן, וסגמנטים לא תקינים (favicon.ico, wp-login.php): בלי פנייה ל-DB
+    if route_name in reserved_route_names() or not ROUTE_RE.match(route_name):
+        abort(404)
+    resolved = resolve_route(route_name, rest)
+    if resolved is None:
+        abort(404)
+    route, script_name, path_info = resolved
+    if not route.live_code:
         abort(404)
     try:
         sub = get_subapp(route)
         environ = request.environ.copy()
-        environ["SCRIPT_NAME"] = request.script_root + f"/{username}/{route_name}"
-        environ["PATH_INFO"] = "/" + rest
+        environ["SCRIPT_NAME"] = request.script_root + script_name
+        environ["PATH_INFO"] = path_info
         strip_admin_cookie_from_request(environ)
         response = Response.from_app(sub, environ, buffered=True)
         strip_admin_cookie_from_response(response)
