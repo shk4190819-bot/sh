@@ -1,4 +1,6 @@
 import ast
+import contextlib
+import contextvars
 import difflib
 import json
 import logging
@@ -6,9 +8,11 @@ import os
 import random
 import re
 import secrets
+import sys
+import threading
+import traceback
 from functools import wraps
 from types import MappingProxyType, ModuleType
-from urllib.parse import quote as url_quote
 
 from authlib.integrations.flask_client import OAuth
 from cryptography.fernet import Fernet, InvalidToken
@@ -17,6 +21,7 @@ from flask_wtf.csrf import CSRFError, CSRFProtect
 from jinja2 import DictLoader
 from sqlalchemy import and_ as sa_and, func as sa_func, inspect as sa_inspect, or_ as sa_or, text as sa_text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -852,12 +857,22 @@ def build_subapp(code, label, ident, env=None, tag=0):
     return sub, None
 def activate(route):
     """מעביר קוד ממתין ל-live. נקרא רק אחרי אישור מנהל (או כשהמנהל עצמו פורס)."""
+    ctx = RequestLogCtx(route.id)  # פלט ושגיאות של טעינת הבדיקה משויכים לשרת הזה
+    token = _req_ctx.set(ctx)
+    failure = None
     try:
         _, pkg = build_subapp(route.pending_code, route.full_path, route.id, route_env(route), tag="dry")  # בדיקת טעינה
         if pkg:
             bundles.unload(pkg)  # זו הייתה רק בדיקה
     except Exception as e:
-        raise UserError(f"הקוד לא נטען: {type(e).__name__}: {str(e)[:200]}")
+        failure = e
+    finally:
+        _req_ctx.reset(token)
+    if failure is not None:
+        ctx.add_system("activate load error", failure)
+    flush_request_logs(ctx)
+    if failure is not None:
+        raise UserError(f"הקוד לא נטען: {type(failure).__name__}: {str(failure)[:200]}")
     route.live_code = route.pending_code
     route.pending_code = None
     route.live_version += 1
@@ -874,65 +889,253 @@ def get_subapp(route):
     return sub
 
 
+# ==========================================
+# יומנים: כל אירוע של בקשה משויך ל-route_id ול-request_id
+# ==========================================
+# הבקשה צוברת אירועים בזיכרון (access, print/stdout/stderr, logging, שגיאות) ושומרת אותם בסוף ב-commit אחד.
+# הפורמט נשמר בעמודת Log.message הקיימת (בלי שינוי schema). הפורמט הישן "Method: .. | Status: .. | IP: .." עדיין נתמך בתצוגה.
+#   access:  Method: GET | Status: 200 | IP: 1.2.3.4 | Path: /x | Req: <id> | Size: 123
+#   אחר:     Kind: app|log|system | Req: <id> | [Src/Level/Logger: ..] | Msg: <טקסט חופשי, תמיד אחרון>
+# מגבלה ידועה: ה-context הוא ContextVar, ולכן print/logging של thread שהקוד פתח בעצמו לא משויך לשרת (נשאר רק ב-stdout המקורי).
 MAX_LOGS_PER_ROUTE = int(os.environ.get("MAX_LOGS_PER_ROUTE", "1000"))
+MAX_EVENTS_PER_REQUEST = int(os.environ.get("MAX_LOG_EVENTS_PER_REQUEST", "50"))  # אירועי app/logging בבקשה אחת (access ושגיאות מערכת נוספים מעבר לכך)
+MAX_LOG_MESSAGE = int(os.environ.get("MAX_LOG_MESSAGE_CHARS", "2000"))  # אורך מרבי של הודעה שלמה
+MAX_LOG_TEXT = 500  # אורך הטקסט החופשי (לפני traceback)
+MAX_LOG_TRACEBACK = 1200  # סוף ה-traceback בלבד: שם נמצאת השגיאה עצמה
+VIEW_LOGS_LIMIT = 200
+
+_req_ctx = contextvars.ContextVar("request_log_ctx", default=None)
+_suppress_capture = contextvars.ContextVar("request_log_suppress", default=False)
 
 
-def prune_logs(route_id):
-    """משאיר רק את היומנים האחרונים של שרת, כדי שהמסד לא יתנפח (חשוב במסד חינמי)."""
-    cutoff = (
-        db.session.query(Log.id).filter_by(route_id=route_id).order_by(Log.id.desc()).offset(MAX_LOGS_PER_ROUTE).limit(1).scalar()
-    )
-    if cutoff:
-        Log.query.filter(Log.route_id == route_id, Log.id <= cutoff).delete(synchronize_session=False)
-        db.session.commit()
+def _clean(value, limit=200):
+    """ערך שמגיע מהמשתמש (נתיב, שם logger) בתוך כותרת ההודעה: בלי תווי בקרה ובלי ' | ', כדי שלא יזייף שדות."""
+    return "".join(ch for ch in str(value) if ch.isprintable()).replace("|", "¦")[:limit]
 
 
-def record_log(route_id, message):
+class RequestLogCtx:
+    """האירועים של בקשה אחת (או הפעלה אחת) של שרת אחד."""
+
+    def __init__(self, route_id):
+        self.route_id = route_id
+        self.request_id = secrets.token_hex(5)
+        self.events = []  # [(timestamp, message)]
+        self.dropped = 0
+        self._bufs = {"stdout": "", "stderr": ""}
+        self._lock = threading.Lock()
+
+    def _add(self, message, force=False):
+        with self._lock:
+            if not force and len(self.events) >= MAX_EVENTS_PER_REQUEST:
+                self.dropped += 1
+                return
+            self.events.append((utcnow(), message[:MAX_LOG_MESSAGE]))
+
+    def _event(self, kind, text, **fields):
+        head = " | ".join([f"Kind: {kind}", f"Req: {self.request_id}"] + [f"{k}: {_clean(v, 100)}" for k, v in fields.items() if v])
+        return f"{head} | Msg: {text}"
+
+    def add_stream(self, src, data):
+        """print / stdout / stderr: אירוע לכל שורה שלמה. שורה חלקית ממתינה עד שתושלם (או עד סוף הבקשה)."""
+        with self._lock:
+            full = len(self.events) >= MAX_EVENTS_PER_REQUEST
+        if full:  # בלי לבנות מחרוזות ענקיות אחרי שהגענו למגבלה
+            with self._lock:
+                self.dropped += data.count("\n")
+            return
+        with self._lock:
+            lines = (self._bufs[src] + data).split("\n")
+            self._bufs[src] = lines.pop()
+            if len(self._bufs[src]) > MAX_LOG_TEXT:  # שורה ארוכה בלי ירידת שורה
+                lines.append(self._bufs[src])
+                self._bufs[src] = ""
+        for line in lines:
+            line = line.rstrip("\r")
+            if line.strip():
+                self._add(self._event("app", line[:MAX_LOG_TEXT], Src=src))
+
+    def add_log(self, record):
+        try:
+            text = record.getMessage()
+        except Exception:
+            text = str(record.msg)
+        text = text[:MAX_LOG_TEXT]
+        if record.exc_info and record.exc_info[0] is not None:
+            text += "\n" + "".join(traceback.format_exception(*record.exc_info))[-MAX_LOG_TRACEBACK:]
+        self._add(self._event("log", text, Level=record.levelname, Logger=record.name))
+
+    def add_system(self, text, exc=None):
+        """שגיאת runtime / load / activate. נשמרת גם כשהגענו למגבלת האירועים."""
+        text = text[:MAX_LOG_TEXT]
+        if exc is not None:
+            text += f": {type(exc).__name__}: {str(exc)[:300]}"
+            tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+            text += "\n" + tb[-MAX_LOG_TRACEBACK:]
+        self._add(self._event("system", text), force=True)
+
+    def add_access(self, method, status, ip, path, size):
+        # בכוונה בלי query string: הוא עלול להכיל סודות
+        parts = [f"Method: {_clean(method, 10)}", f"Status: {int(status)}", f"IP: {_clean(ip or '-', 64)}", f"Path: {_clean(path)}", f"Req: {self.request_id}"]
+        if size is not None:
+            parts.append(f"Size: {int(size)}")
+        self._add(" | ".join(parts), force=True)
+
+    def close(self):
+        for src, rest in self._bufs.items():
+            if rest.strip():
+                self._add(self._event("app", rest[:MAX_LOG_TEXT], Src=src))
+            self._bufs[src] = ""
+        if self.dropped:
+            self._add(self._event("system", f"{self.dropped} אירועים נוספים לא נשמרו (מגבלה: {MAX_EVENTS_PER_REQUEST} לבקשה)"), force=True)
+            self.dropped = 0
+
+
+class _StreamTee:
+    """עוטף את stdout/stderr: הפלט תמיד ממשיך ליעד המקורי, ובנוסף נצבר אם יש request context פעיל."""
+
+    _is_req_tee = True
+
+    def __init__(self, target, name):
+        self._target, self._name = target, name
+
+    def write(self, data):
+        n = self._target.write(data)
+        ctx = _req_ctx.get()
+        if ctx is not None and isinstance(data, str) and not _suppress_capture.get():
+            try:
+                ctx.add_stream(self._name, data)
+            except Exception:
+                pass
+        return n
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
+    def __getattr__(self, name):
+        return getattr(self._target, name)
+
+
+def _capturing_handle(self, record):
+    """אירוע logging נתפס פעם אחת, ברמת ה-Logger. בזמן הטיפול בו כתיבת handler ל-stderr (שעטוף ב-tee) לא נספרת שוב."""
+    ctx = _req_ctx.get()
+    if ctx is None or _suppress_capture.get():
+        return _capturing_handle.orig(self, record)
+    if not self.disabled:
+        try:
+            ctx.add_log(record)
+        except Exception:
+            pass
+    token = _suppress_capture.set(True)
     try:
-        db.session.add(Log(route_id=route_id, message=message[:500]))
-        db.session.commit()
-        if random.random() < 0.02:  # ניקוי מדי פעם, לא בכל בקשה
-            prune_logs(route_id)
+        return _capturing_handle.orig(self, record)
+    finally:
+        _suppress_capture.reset(token)
+
+
+def install_log_capture():
+    """idempotent. נקרא פעם אחת בעלייה."""
+    for name in ("stdout", "stderr"):
+        if not getattr(getattr(sys, name), "_is_req_tee", False):
+            setattr(sys, name, _StreamTee(getattr(sys, name), name))
+    if not hasattr(logging.Logger.handle, "orig"):
+        _capturing_handle.orig = logging.Logger.handle
+        logging.Logger.handle = _capturing_handle
+
+
+@contextlib.contextmanager
+def _system_logging():
+    """לוגים של המערכת עצמה (גם כשהם נכתבים בזמן בקשה) לא נכנסים ליומן של השרת."""
+    token = _suppress_capture.set(True)
+    try:
+        yield
+    finally:
+        _suppress_capture.reset(token)
+
+
+install_log_capture()
+
+
+def prune_logs(route_id, session=None):
+    """משאיר רק את היומנים האחרונים של שרת, כדי שהמסד לא יתנפח (חשוב במסד חינמי)."""
+    s = session or db.session
+    cutoff = s.query(Log.id).filter_by(route_id=route_id).order_by(Log.id.desc()).offset(MAX_LOGS_PER_ROUTE).limit(1).scalar()
+    if cutoff:
+        s.query(Log).filter(Log.route_id == route_id, Log.id <= cutoff).delete(synchronize_session=False)
+        s.commit()
+
+
+def flush_request_logs(ctx):
+    """שמירה מרוכזת: commit אחד לכל האירועים. session נפרד, כדי לא לשמור בטעות שינויים פתוחים של db.session."""
+    ctx.close()
+    if not ctx.events:
+        return
+    try:
+        with Session(db.engine) as s:
+            s.add_all([Log(route_id=ctx.route_id, timestamp=ts, message=msg) for ts, msg in ctx.events])
+            s.commit()
+            if random.random() < min(1.0, 0.02 * len(ctx.events)):  # ניקוי מדי פעם, לא בכל בקשה
+                prune_logs(ctx.route_id, s)
     except Exception:
-        db.session.rollback()
-        app.logger.exception("Failed to write log")
+        with _system_logging():
+            app.logger.exception("Failed to write logs")
 
 
-def _log_text(value, limit):
-    """טקסט חופשי בשורת יומן: בלי מעברי שורה ובלי המפריד ' | ', כדי שהפענוח של השורה יישאר חד-משמעי."""
-    return re.sub(r"\s+", " ", str(value)).replace(" | ", " / ")[:limit]
+_LOG_KEYS = ("Kind", "Method", "Status", "IP", "Path", "Req", "Size", "Src", "Level", "Logger")
 
 
-def build_request_log(status, error=None):
-    """שורת יומן לבקשה: Method | Status | IP | Path [| Error]. שלושת השדות הראשונים זהים לפורמט הישן, אז יומנים קיימים נשארים תקפים.
-    ה-path בלי query string (עלול להכיל טוקנים) ומקודד באחוזים, כך שאין בו מפריד ' | '."""
-    path = url_quote(request.path, safe="/:@!$&'()*+,;=-._~")[:200]
-    parts = [f"Method: {request.method}", f"Status: {status}", f"IP: {request.remote_addr}", f"Path: {path}"]
-    if error:
-        parts.append("Error: " + _log_text(error, 200))
-    return " | ".join(parts)
-
-
-_LOG_LABELS = (("Method: ", "method"), ("Status: ", "status"), ("IP: ", "ip"), ("Path: ", "path"), ("Error: ", "error"))
-
-
-def parse_log(message):
-    """מפענח הודעת יומן (חדשה או ישנה) ל-dict: method, status, ip, path, text. שדה חסר = מחרוזת ריקה.
-    ישן: 'Method: GET | Status: 200 | IP: x' (בלי path), או עם סיומת חופשית 'load/run error' (נכנסת ל-text).
-    הודעה שלא בפורמט הזה בכלל מוצגת כמו שהיא ב-text."""
-    entry = {"method": "", "status": "", "ip": "", "path": "", "error": ""}
-    extras = []
-    for part in (message or "").split(" | "):
-        for prefix, key in _LOG_LABELS:
-            if part.startswith(prefix) and not entry[key]:
-                entry[key] = part[len(prefix):]
-                break
+def parse_log(row):
+    """מפענח שורת Log (פורמט ישן וחדש) לשדות לתצוגה. שדה שלא קיים בהודעה נשאר ריק."""
+    msg = row.message or ""
+    head, body = msg, ""
+    if msg.startswith("Kind: "):  # רק הפורמט החדש מכיל Msg חופשי; הטקסט שאחרי Msg לא מפוענח
+        head, _, body = msg.partition(" | Msg: ")
+    fields, extra = {}, []
+    for part in head.split(" | "):
+        key, sep, value = part.partition(": ")
+        if sep and key in _LOG_KEYS and key not in fields:
+            fields[key] = value
         else:
-            extras.append(part)
-    if not (entry["method"] and entry["status"]):
-        return {"method": "", "status": "", "ip": "", "path": "", "text": message or ""}
-    text = entry.pop("error") or " · ".join(extras)
-    return {**entry, "text": text}
+            extra.append(part)
+    if "Method" in fields and "Status" in fields:
+        kind = "access"
+    elif fields.get("Kind") in ("app", "log", "system"):
+        kind = fields["Kind"]
+    else:
+        kind = "raw"
+    req = fields.get("Req", "")
+    if kind == "access":
+        bits = [fields.get("Path", ""), fields.get("IP", "")]
+        if fields.get("Size"):
+            bits.append(f"{fields['Size']} B")
+        if req:
+            bits.append(f"req {req}")
+        meta = " · ".join(b for b in bits + extra if b)
+    elif kind == "raw":
+        meta = msg
+    else:
+        meta = (f"req {req} · " if req else "") + body
+    level = fields.get("Level", "")
+    status = fields.get("Status", "")
+    if kind == "access":
+        tone = "bad" if status[:1] == "5" else "warn" if status[:1] == "4" else ""
+    elif kind == "system" or level in ("ERROR", "CRITICAL"):
+        tone = "bad"
+    elif level == "WARNING":
+        tone = "warn"
+    else:
+        tone = ""
+    return {
+        "kind": kind,
+        "timestamp": row.timestamp,
+        "method": fields.get("Method", "") if kind == "access" else (fields.get("Src", "") if kind == "app" else ("log" if kind == "log" else "")),
+        "status": status,
+        "level": level,
+        "label": {"app": "App", "log": level or "Log", "system": "System"}.get(kind, ""),
+        "req": req,
+        "meta": meta,
+        "tone": tone,
+    }
 
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
@@ -1024,8 +1227,13 @@ def dispatch(route_name, rest):
     route, script_name, path_info = resolved
     if not route.live_code:
         abort(404)
+    # ה-context נקבע לפני הטעינה וההרצה של קוד המשתמש: גם פלט בזמן load משויך לשרת ולבקשה הנכונים
+    ctx = RequestLogCtx(route.id)
+    token = _req_ctx.set(ctx)
+    phase, response, failure = "load", None, None
     try:
         sub = get_subapp(route)
+        phase = "run"
         environ = request.environ.copy()
         environ["SCRIPT_NAME"] = request.script_root + script_name
         environ["PATH_INFO"] = path_info
@@ -1033,15 +1241,23 @@ def dispatch(route_name, rest):
         response = Response.from_app(sub, environ, buffered=True)
         strip_admin_cookie_from_response(response)
         response.headers["X-Content-Type-Options"] = "nosniff"
-    except Exception as exc:
-        app.logger.exception("Sub-server failed: %s", route.full_path)
+    except Exception as e:
+        failure = e
+        ctx.add_system(f"{phase} error", e)
+        with _system_logging():
+            app.logger.exception("Sub-server failed (%s): %s", phase, route.full_path)
+    finally:
+        _req_ctx.reset(token)
+    size = None
+    if response is not None:
         try:
-            detail = f"load/run error: {type(exc).__name__}: {exc}"
-        except Exception:  # __str__ של החריגה עצמה נכשל: לא נהפוך את ה-502 ל-500
-            detail = f"load/run error: {type(exc).__name__}"
-        record_log(route.id, build_request_log(502, detail))
+            size = response.calculate_content_length()
+        except Exception:
+            pass
+    ctx.add_access(request.method, 502 if failure is not None else response.status_code, request.remote_addr, request.path, size)
+    flush_request_logs(ctx)
+    if failure is not None:
         abort(502)
-    record_log(route.id, build_request_log(response.status_code))
     return response
 
 
@@ -1235,8 +1451,8 @@ def view_logs(route_id):
     route = db.session.get(Route, route_id)
     if not route or (route.user_id != user.id and not user.is_admin):
         abort(404)
-    logs = Log.query.filter_by(route_id=route.id).order_by(Log.timestamp.desc(), Log.id.desc()).limit(50).all()
-    entries = [{**parse_log(lg.message), "ts": lg.timestamp} for lg in logs]
+    logs = Log.query.filter_by(route_id=route.id).order_by(Log.timestamp.desc(), Log.id.desc()).limit(VIEW_LOGS_LIMIT).all()
+    entries = [parse_log(row) for row in logs]
     return render_template("logs.html", route=route, logs=logs, entries=entries)
 
 
