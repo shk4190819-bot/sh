@@ -13,8 +13,8 @@ BASE = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <style>
-:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f8f8fa;--panel:#ffffff;--panel-2:#f1f1f5;--border:#e4e5ea;--text:#16171c;--muted:#686c78;--side-w:236px;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r:8px;--r-lg:12px;--ok-bg:color-mix(in srgb,var(--ok) 14%,transparent);--warn-bg:color-mix(in srgb,var(--warn) 14%,transparent);--bad-bg:color-mix(in srgb,var(--bad) 14%,transparent)}
-[data-bs-theme=dark]{--brand:#7377ff;--brand-d:#8a8dff;--bg:#0a0b0e;--panel:#101115;--panel-2:#17181d;--border:#22242b;--text:#e8e9ed;--muted:#8c909c;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+:root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f6f6f8;--panel:#ffffff;--panel-2:#f0f0f4;--border:#e2e3e9;--text:#14151a;--muted:#6b6f7b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r:10px;--r-lg:14px;--ok-bg:color-mix(in srgb,var(--ok) 14%,transparent);--warn-bg:color-mix(in srgb,var(--warn) 14%,transparent);--bad-bg:color-mix(in srgb,var(--bad) 14%,transparent)}
+[data-bs-theme=dark]{--brand:#7377ff;--brand-d:#8a8dff;--bg:#0c0d10;--panel:#131418;--panel-2:#1b1c22;--border:#272930;--text:#e7e8ec;--muted:#8b8f9b;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
 body{font-family:'Heebo',system-ui,sans-serif;background:var(--bg);color:var(--text);--bs-body-bg:var(--bg);--bs-body-color:var(--text);--bs-border-color:var(--border);--bs-secondary-color:var(--muted);--bs-tertiary-bg:var(--panel-2);--bs-emphasis-color:var(--text)}
 .text-muted{color:var(--muted)!important}
 a{color:var(--brand)}a:hover{color:var(--brand-d)}
@@ -130,44 +130,21 @@ details>summary{cursor:pointer;color:var(--muted)}
 .st-mute{color:var(--muted);background:var(--panel-2);border-color:var(--border)}
 .st-info{color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,transparent);border-color:color-mix(in srgb,var(--brand) 30%,transparent)}
 .code-view{direction:ltr;text-align:left;background:var(--panel-2);color:var(--text);white-space:pre-wrap;overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1rem;margin:0;font-size:.82rem}
-.lv{position:relative}
-.lv-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem 1rem;margin-bottom:.6rem}
-.lv-title{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem .7rem}
-.lv-count{color:var(--muted);font-size:.8rem}
-.lv-chip{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.72rem;font-weight:600;border-radius:5px;padding:.05rem .45rem}
-.lv-chip.s-5{color:var(--bad);background:var(--bad-bg)}.lv-chip.s-4{color:var(--warn);background:var(--warn-bg)}
-.lv-ctrl{display:flex;align-items:center;gap:.9rem}
-.lv-live{display:inline-flex;align-items:center;gap:.5rem}
-.lv-live .form-check-label{color:var(--muted);font-size:.8rem;cursor:pointer}
-.lv-live.is-on .form-check-label{color:var(--ok)}
-.lv-live.is-on .form-check-label::before{content:'';display:inline-block;width:7px;height:7px;margin-inline-end:.4rem;border-radius:50%;background:var(--ok);animation:lvPulse 1.6s ease-in-out infinite}
-@keyframes lvPulse{50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){.lv-live.is-on .form-check-label::before{animation:none}}
-.lv-scroll{height:clamp(300px,calc(100vh - 260px),780px);overflow:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--panel)}
-.lv-scroll:focus-visible{outline-offset:-2px}
-.log-list{direction:ltr;text-align:left;min-width:0;padding-bottom:.35rem;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem;line-height:1.5}
-.log-day{position:sticky;top:0;z-index:1;padding:.3rem .75rem;color:var(--muted);background:var(--panel-2);font-size:.7rem;border-bottom:1px solid var(--border)}
-.log-row{display:grid;grid-template-columns:4.2rem 3.2rem 2.2rem minmax(0,1fr) auto;gap:.1rem .7rem;align-items:baseline;padding:.12rem .75rem;border-inline-start:3px solid transparent}
-.log-row:hover{background:color-mix(in srgb,var(--text) 5%,transparent)}
+.log-list{border:1px solid var(--border);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.log-head,.log-row{display:grid;grid-template-columns:165px 64px 72px minmax(0,1fr);gap:.75rem;align-items:center;padding:.5rem .9rem}
+.log-head{color:var(--muted);font-size:.78rem;font-weight:500;border-bottom:1px solid var(--border)}
+.log-row{border-bottom:1px solid var(--border);border-inline-start:3px solid transparent;font-size:.85rem}
+.log-row:last-child{border-bottom:0}
+.log-row.is-4{border-inline-start-color:var(--warn);background:var(--warn-bg)}
 .log-row.is-5{border-inline-start-color:var(--bad);background:var(--bad-bg)}
-.lg-time{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.lg-method{font-weight:600}
-.lg-st{font-weight:600;font-variant-numeric:tabular-nums}
-.lg-st.s-2{color:var(--ok)}.lg-st.s-3{color:var(--brand)}.lg-st.s-4{color:var(--warn)}.lg-st.s-5{color:var(--bad)}
-.lg-body{min-width:0;overflow-wrap:anywhere}
-.lg-path{color:var(--text)}
-.lg-msg{color:var(--muted);unicode-bidi:plaintext}
-.lg-path+.lg-msg{margin-inline-start:.6rem}
-.lg-msg.is-err{color:var(--bad)}
-.lg-ip{grid-column:5;color:var(--muted);font-size:.72rem;white-space:nowrap}
-.lv-jump{position:absolute;inset-inline-end:1rem;bottom:1rem;display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;padding:.3rem .7rem;border-radius:999px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);box-shadow:0 6px 20px -8px rgba(0,0,0,.5);cursor:pointer}
-.lv-jump:hover{border-color:var(--muted)}.lv-jump[hidden]{display:none}
+.log-time,.log-method,.log-meta{direction:ltr;text-align:left}
+.log-time{font-variant-numeric:tabular-nums;white-space:nowrap}
+.log-method{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem;font-weight:600}
+.log-meta{color:var(--muted);min-width:0;overflow-wrap:anywhere;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem}
 @media (max-width:640px){
-  .lv-scroll{height:clamp(280px,calc(100dvh - 300px),640px)}
-  .log-row{grid-template-columns:auto auto 1fr;gap:.05rem .6rem;padding-block:.3rem;border-bottom:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
-  .lg-body,.lg-ip{grid-column:1/-1}
-  .lg-path,.lg-msg{display:block}
-  .lg-path+.lg-msg{margin-inline-start:0}
+  .log-head{display:none}
+  .log-row{grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"st m t" "meta meta meta";gap:.3rem .6rem}
+  .log-st{grid-area:st}.log-method{grid-area:m}.log-time{grid-area:t;text-align:end;direction:ltr;font-size:.78rem;color:var(--muted)}.log-meta{grid-area:meta}
 }
 .acct{padding:1.25rem 1.4rem;margin-bottom:1rem}
 .acct-head{display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem}
@@ -245,58 +222,20 @@ details>summary{cursor:pointer;color:var(--muted)}
 .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 30px 70px -40px color-mix(in srgb,var(--brand) 55%,transparent)}
 .btn-oauth{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.62rem;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);font-weight:500;text-decoration:none;font-size:.92rem}
 .btn-oauth:hover{border-color:var(--muted);color:var(--text)}
-/* ===== מעטפת בסגנון פלטפורמת hosting: סרגל צד קבוע, טיפוגרפיה, כפתורים, מצבי טעינה ===== */
-body{font-size:.94rem;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-h1,h2,h3,h4,h5,h6{letter-spacing:-.005em}
-.card,.srv-list,.tbl,.panel,.attn,.actionbar,.notice,.empty,.auth-card{border-radius:var(--r)}
-.btn{border-radius:var(--r-sm);font-weight:500;transition:background-color .12s,border-color .12s,color .12s}
-.btn-sm{font-size:.82rem}
-.btn:disabled,.btn.disabled{opacity:.55}
-.btn.js-load:disabled::before{content:'';display:inline-block;width:.8em;height:.8em;margin-inline-end:.45rem;vertical-align:-.1em;border:2px solid currentColor;border-inline-end-color:transparent;border-radius:50%;animation:shspin .7s linear infinite}
-@keyframes shspin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.btn.js-load:disabled::before{animation-duration:2s}}
-.alert{padding:.6rem .9rem;font-size:.88rem;border-radius:var(--r)}
-.tbl-head{background:var(--panel-2)}
-.page-head h1{font-size:1.4rem;letter-spacing:-.01em}
-.topbar{margin-bottom:1.25rem}
-.topnav a{display:inline-flex;align-items:center;gap:.5rem}
-.topnav .ni{display:none}
-.av-name{display:none}
-.topnav .badge{margin-inline-start:auto}
-@media (min-width:992px){
-  body.has-side main.container{width:auto;max-width:1180px!important;margin-inline:0;margin-inline-start:var(--side-w);padding:1.75rem 2rem 3rem}
-  body.has-side .topbar{position:fixed;top:0;bottom:0;inset-inline-start:0;width:var(--side-w);margin:0;border-bottom:0;border-inline-end:1px solid var(--border);overflow-y:auto;z-index:100}
-  .topbar .inner{max-width:none!important;width:100%;min-height:100%;margin:0;padding:1rem .75rem;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:.25rem}
-  .topbar .tb-brand{padding:.25rem .5rem .9rem;gap:.6rem}
-  .topbar .tb-brand .d-none{display:inline!important}
-  .topbar .tb-actions{display:contents}
-  .tb-new{order:1}.tb-new .btn{width:100%;padding:.45rem .75rem}
-  .topnav{order:2;flex-direction:column;gap:2px;margin-top:.9rem;overflow:visible}
-  .topnav a{padding:.5rem .7rem;font-size:.9rem;gap:.65rem}
-  .topnav .ni{display:block;flex:none;opacity:.8}
-  .topnav a.on{background:var(--panel-2);color:var(--text);font-weight:500;box-shadow:inset 0 0 0 1px var(--border)}
-  .topnav a.on .ni{color:var(--brand);opacity:1}
-  .tb-user{order:3;margin-top:auto;padding-top:.75rem;border-top:1px solid var(--border)}
-  .tb-user .avatar{width:100%;height:auto;border-radius:var(--r-sm);border-color:transparent;background:transparent;justify-content:flex-start;gap:.65rem;padding:.4rem .5rem;font-weight:500;font-size:.88rem}
-  .tb-user .avatar:hover{background:var(--panel-2)}
-  .av-i{width:28px;height:28px;border-radius:50%;background:var(--panel-2);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600;flex:none}
-  .av-name{display:inline;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .svc-layout{grid-template-columns:176px minmax(0,1fr);gap:1.75rem}
-}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </style>
 </head>
-<body{% if current_user and (current_user.is_approved or current_user.is_admin) %} class="has-side"{% endif %}>
+<body>
 {% if current_user and (current_user.is_approved or current_user.is_admin) %}
-<header class="topbar"><div class="container inner" style="max-width:1180px">
+<header class="topbar mb-4"><div class="container inner" style="max-width:1180px">
   <a href="{{ url_for('index') }}" class="tb-brand"><span class="brand-mark brand-sm">SH</span><span class="d-none d-sm-inline">מערכת שרתים</span></a>
   <nav class="topnav" aria-label="ניווט ראשי">
-    <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %}on{% endif %}"{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %} aria-current="page"{% endif %}><svg class="ni" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="14" height="5" rx="1.5"/><rect x="3" y="11.5" width="14" height="5" rx="1.5"/><path d="M6 6h.01M6 14h.01"/></svg><span>שרתים</span></a>
-    {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}"{% if request.endpoint in ('admin_users','admin_user') %} aria-current="page"{% endif %}><svg class="ni" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="3"/><path d="M4 16.5c.8-3 3-4.5 6-4.5s5.2 1.5 6 4.5"/></svg><span>משתמשים</span>{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
-    <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}"{% if request.endpoint == 'account' %} aria-current="page"{% endif %}><svg class="ni" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/></svg><span>הגדרות חשבון</span></a>
+    <a href="{{ url_for('index') }}" class="{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %}on{% endif %}"{% if request.endpoint in ('index','edit_route','view_logs','new_server','review_route') %} aria-current="page"{% endif %}>שרתים</a>
+    {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}" class="{% if request.endpoint in ('admin_users','admin_user') %}on{% endif %}"{% if request.endpoint in ('admin_users','admin_user') %} aria-current="page"{% endif %}>משתמשים{% if pending_users_count %} <span class="badge bg-warning text-dark">{{ pending_users_count }}</span>{% endif %}</a>{% endif %}
+    <a href="{{ url_for('account') }}" class="{% if request.endpoint == 'account' %}on{% endif %}"{% if request.endpoint == 'account' %} aria-current="page"{% endif %}>הגדרות חשבון</a>
   </nav>
   <div class="tb-actions">
-    <div class="dropdown tb-new">
+    <div class="dropdown">
       <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="dropdown" aria-expanded="false">חדש +</button>
       <ul class="dropdown-menu dropdown-menu-end" style="min-width:230px">
         <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=paste">שרת מקוד שהודבק</a></li>
@@ -304,8 +243,8 @@ h1,h2,h3,h4,h5,h6{letter-spacing:-.005em}
         <li><a class="dropdown-item" href="{{ url_for('new_server') }}?mode=github">קובץ בודד מ-GitHub</a></li>
       </ul>
     </div>
-    <div class="dropdown tb-user">
-      <button type="button" class="avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="תפריט משתמש"><span class="av-i">{{ current_user.username[:1]|upper }}</span><span class="av-name ltr">{{ current_user.username }}</span></button>
+    <div class="dropdown">
+      <button type="button" class="avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="תפריט משתמש">{{ current_user.username[:1]|upper }}</button>
       <ul class="dropdown-menu dropdown-menu-end" style="min-width:210px">
         <li class="px-2 py-1"><div class="fw-semibold ltr">{{ current_user.username }}</div><div class="small text-muted">{% if current_user.is_admin %}מנהל{% else %}משתמש{% endif %}</div></li>
         <li><hr class="dropdown-divider" style="border-color:var(--border)"></li>
@@ -325,7 +264,7 @@ h1,h2,h3,h4,h5,h6{letter-spacing:-.005em}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-(function(){var tb=document.querySelector('.topbar');if(!tb)return;function h(){var side=window.matchMedia('(min-width:992px)').matches;document.documentElement.style.setProperty('--tb-h',(side?0:tb.offsetHeight)+'px');}h();window.addEventListener('resize',h);})();
+(function(){var tb=document.querySelector('.topbar');if(!tb)return;function h(){document.documentElement.style.setProperty('--tb-h',tb.offsetHeight+'px');}h();window.addEventListener('resize',h);})();
 document.addEventListener('show.bs.dropdown',function(e){var r=e.target.closest('.srv');if(r)r.classList.add('is-open');});
 document.addEventListener('hidden.bs.dropdown',function(e){var r=e.target.closest('.srv');if(r)r.classList.remove('is-open');});
 document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){
@@ -632,68 +571,47 @@ REVIEW = """{% extends 'base.html' %}
 LOGS = """{% extends 'service.html' %}
 {% block title %}יומנים{% endblock %}
 {% block service_content %}
-{% set ns = namespace(e4=0, e5=0, day='') %}
-{% for e in entries %}{% if e.status[:1] == '5' %}{% set ns.e5 = ns.e5 + 1 %}{% elif e.status[:1] == '4' %}{% set ns.e4 = ns.e4 + 1 %}{% endif %}{% endfor %}
-<div class="lv">
-  <div class="lv-bar">
-    <div class="lv-title">
-      <h5 class="fw-semibold mb-0">יומנים</h5>
-      {% if entries %}<span class="lv-count">{{ entries|length }} בקשות אחרונות · שעות ב-UTC</span>{% if ns.e5 %}<span class="lv-chip s-5">{{ ns.e5 }} × 5xx</span>{% endif %}{% if ns.e4 %}<span class="lv-chip s-4">{{ ns.e4 }} × 4xx</span>{% endif %}{% endif %}
-    </div>
-    <div class="lv-ctrl">
-      <div class="form-check form-switch m-0 lv-live" id="lvLive"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
-      <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
-    </div>
+{% set ns = namespace(e4=0, e5=0, sysx=0) %}
+{% for e in entries %}{% if e.kind == 'access' %}{% if e.status[:1] == '5' %}{% set ns.e5 = ns.e5 + 1 %}{% elif e.status[:1] == '4' %}{% set ns.e4 = ns.e4 + 1 %}{% endif %}{% elif e.kind == 'system' %}{% set ns.sysx = ns.sysx + 1 %}{% endif %}{% endfor %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h5 class="fw-semibold mb-0">יומנים</h5>
+    {% if entries %}<div class="d-flex gap-2 flex-wrap mt-1 small"><span class="text-muted">{{ entries|length }} אירועים אחרונים</span>{% if ns.sysx %}<span class="st st-bad">{{ ns.sysx }} שגיאות מערכת</span>{% endif %}{% if ns.e5 %}<span class="st st-bad">{{ ns.e5 }} שגיאות שרת</span>{% endif %}{% if ns.e4 %}<span class="st st-warn">{{ ns.e4 }} שגיאות לקוח</span>{% endif %}</div>{% endif %}
   </div>
-  {% if entries %}
-  <div class="lv-scroll" id="lvScroll" tabindex="0" role="log" aria-label="בקשות אחרונות לשרת">
-    <div class="log-list">
-      {% for e in entries|reverse %}
-      {% set sc = e.status[:1] %}
-      {% set day = e.ts.strftime('%Y-%m-%d') %}
-      {% if day != ns.day %}{% set ns.day = day %}<div class="log-day">{{ day }}</div>{% endif %}
-      <div class="log-row{% if sc == '5' %} is-5{% endif %}" title="{{ day }} {{ e.ts.strftime('%H:%M:%S') }} UTC">
-        <span class="lg-time">{{ e.ts.strftime('%H:%M:%S') }}</span>
-        <span class="lg-method">{{ e.method }}</span>
-        <span class="lg-st{% if sc in ('2','3','4','5') %} s-{{ sc }}{% endif %}">{{ e.status }}</span>
-        {% if e.path or e.text %}<div class="lg-body">{% if e.path %}<span class="lg-path">{{ e.path }}</span>{% endif %}{% if e.text %}<span class="lg-msg{% if sc == '5' %} is-err{% endif %}">{{ e.text }}</span>{% endif %}</div>{% endif %}
-        {% if e.ip %}<span class="lg-ip">{{ e.ip }}</span>{% endif %}
-      </div>
-      {% endfor %}
-    </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="autoRefresh"><label class="form-check-label small text-muted" for="autoRefresh">רענון אוטומטי (5 שניות)</label></div>
+    <a href="{{ url_for('view_logs', route_id=route.id) }}" class="btn btn-sm btn-outline-secondary">רענן</a>
   </div>
-  <button type="button" class="lv-jump" id="lvJump" hidden>לסוף היומן &#8595;</button>
-  {% else %}
-  <div class="empty">
-    <div class="em-ico" aria-hidden="true">&#9776;</div>
-    <div class="fw-semibold mb-1" style="color:var(--text)">עוד לא הגיעו בקשות לשרת הזה</div>
-    <div>בקשות חדשות יופיעו כאן. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת.</div>
-  </div>
-  {% endif %}
 </div>
+{% if entries %}
+<div class="log-list" role="table" aria-label="אירועים אחרונים של השרת">
+  <div class="log-head" role="row"><div role="columnheader">זמן (UTC)</div><div role="columnheader">שיטה / מקור</div><div role="columnheader">סטטוס / סוג</div><div role="columnheader">פרטים</div></div>
+  {% for e in entries %}
+  <div class="log-row{% if e.tone == 'bad' %} is-5{% elif e.tone == 'warn' %} is-4{% endif %}" role="row">
+    <div class="log-time" role="cell">{{ e.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+    <div class="log-method" role="cell">{{ e.method }}</div>
+    <div class="log-st" role="cell">{% if e.kind == 'access' %}{% set code = e.status %}<span class="st {% if code[:1] == '2' %}st-ok{% elif code[:1] == '3' %}st-info{% elif code[:1] == '4' %}st-warn{% elif code[:1] == '5' %}st-bad{% else %}st-mute{% endif %}">{{ code }}</span>{% elif e.label %}<span class="st {% if e.tone == 'bad' %}st-bad{% elif e.tone == 'warn' %}st-warn{% elif e.kind == 'log' %}st-info{% else %}st-mute{% endif %}">{{ e.label }}</span>{% endif %}</div>
+    <div class="log-meta" role="cell">{{ e.meta }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+  <div class="em-ico" aria-hidden="true">&#9776;</div>
+  <div class="fw-semibold mb-1" style="color:var(--text)">עוד לא נרשמו אירועים לשרת הזה</div>
+  <div>בקשות חדשות יופיעו כאן. אפשר להפעיל רענון אוטומטי ולפתוח את כתובת השרת.</div>
+</div>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
 (function(){
-  var cb=document.getElementById('autoRefresh'), live=document.getElementById('lvLive'), t=null;
-  var sc=document.getElementById('lvScroll'), jump=document.getElementById('lvJump'), KEY='sh-logs-scroll', RID={{ route.id }};
-  function atBottom(){return sc.scrollHeight-sc.scrollTop-sc.clientHeight<24;}
-  function save(){if(!sc)return;try{sessionStorage.setItem(KEY,JSON.stringify({rid:RID,bottom:atBottom(),top:sc.scrollTop}));}catch(e){}}
-  if(sc){
-    var st=null,nav=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
-    try{st=JSON.parse(sessionStorage.getItem(KEY)||'null');}catch(e){}
-    if(st&&st.rid===RID&&!st.bottom&&nav&&nav.type==='reload'){sc.scrollTop=st.top;}else{sc.scrollTop=sc.scrollHeight;}
-    var upd=function(){jump.hidden=atBottom();};
-    sc.addEventListener('scroll',upd);upd();
-    jump.addEventListener('click',function(){sc.scrollTo({top:sc.scrollHeight,behavior:'smooth'});});
-    window.addEventListener('pagehide',save);
-  }
+  var cb=document.getElementById('autoRefresh'), t=null;
   try{cb.checked=sessionStorage.getItem('sh-auto-logs')==='1';}catch(e){}
   function apply(){
     try{sessionStorage.setItem('sh-auto-logs',cb.checked?'1':'0');}catch(e){}
-    live.classList.toggle('is-on',cb.checked);
     if(t){clearInterval(t);t=null;}
-    if(cb.checked){t=setInterval(function(){save();location.reload();},5000);}
+    if(cb.checked){t=setInterval(function(){location.reload();},5000);}
   }
   cb.addEventListener('change',apply); apply();
 })();
