@@ -2,6 +2,7 @@ import ast
 import contextlib
 import contextvars
 import difflib
+import hmac
 import json
 import logging
 import os
@@ -10,9 +11,11 @@ import re
 import secrets
 import sys
 import threading
+import time
 import traceback
 from functools import wraps
 from types import MappingProxyType, ModuleType
+from urllib.parse import urlencode
 
 from authlib.integrations.flask_client import OAuth
 from cryptography.fernet import Fernet, InvalidToken
@@ -163,7 +166,7 @@ def handle_user_error(e):
                 max_code_chars=MAX_CODE_CHARS,
                 max_ai_chars=MAX_AI_CODE_CHARS,
             ), 400
-        if request.endpoint in ("update_key", "update_github"):
+        if request.endpoint in ("update_key", "update_github", "github_app_connect", "github_app_callback", "github_app_disconnect"):
             return redirect(url_for("account"))
         return redirect(url_for("index"))
     return render_template("error.html", message=str(e)), 400
@@ -355,8 +358,41 @@ def get_api_key(user, provider):
         raise UserError("לא ניתן לפענח את המפתח השמור. הזן אותו מחדש.")
 
 
+GITHUB_APP_PROVIDER = "github_app"  # שורת ApiKey שערכה JSON מוצפן: installation_id, login, type
+GITHUB_APP_STATE_TTL = 600  # שניות
+
+
+def get_github_app_link(user):
+    """הקישור של המשתמש להתקנת ה-GitHub App ({installation_id, login, type}), או None."""
+    row = ApiKey.query.filter_by(user_id=user.id, provider=GITHUB_APP_PROVIDER).first()
+    if not row:
+        return None
+    try:
+        data = json.loads(fernet.decrypt(row.encrypted_key.encode()).decode())
+        data["installation_id"] = int(data["installation_id"])
+    except (InvalidToken, ValueError, KeyError, TypeError):
+        return None
+    return data
+
+
 def get_github_token(user):
-    """הטוקן המוצפן של GitHub של המשתמש (נשמר בטבלת ApiKey עם provider=github), או None."""
+    """טוקן קריאה ל-GitHub, או None.
+
+    אם המשתמש חיבר את ה-App, רק הוא משמש: כשל בהנפקה או התקנה שבוטלה זורקים UserError, ואין נפילה שקטה ל-PAT
+    (כדי שביטול הגישה ב-GitHub באמת יעצור את הגישה). טוקן ידני (provider=github) משמש רק כשאין חיבור App בכלל."""
+    if ApiKey.query.filter_by(user_id=user.id, provider=GITHUB_APP_PROVIDER).first() is not None:
+        link = get_github_app_link(user)
+        if link is None:
+            raise UserError("חיבור ה-GitHub App שלך פגום. נתק אותו וחבר מחדש.")
+        if not github_client.app_config():
+            raise UserError("החיבור ל-GitHub בלחיצה לא מוגדר כרגע בשרת. פנה למנהל, או נתק את החיבור וחבר טוקן.")
+        try:
+            return github_client.installation_token(link["installation_id"])
+        except github_client.InstallationGone:
+            raise UserError("ההתקנה של ה-App ב-GitHub הוסרה. נתק את החיבור וחבר מחדש.")
+        except github_client.GithubError as e:
+            app.logger.warning("GitHub App token failed for user %s: %s", user.id, e)
+            raise UserError(f"הנפקת הגישה ל-GitHub דרך ה-App נכשלה: {e}")
     row = ApiKey.query.filter_by(user_id=user.id, provider="github").first()
     if not row:
         return None
@@ -402,6 +438,96 @@ def update_github():
         db.session.add(ApiKey(user_id=user.id, provider="github", encrypted_key=encrypted))
     db.session.commit()
     flash(f"GitHub חובר בהצלחה (החשבון {login}).", "success")
+    return redirect(url_for("account"))
+
+
+@app.post("/settings/github/app/connect")
+@login_required
+def github_app_connect():
+    cfg = github_client.app_config()
+    if not cfg:
+        raise UserError("החיבור ל-GitHub בלחיצה לא מוגדר בשרת. אפשר לחבר בעזרת טוקן.")
+    state = secrets.token_urlsafe(32)
+    session["gh_app_state"] = {"s": state, "u": current_user().id, "t": int(time.time())}
+    return redirect(f"https://github.com/apps/{cfg['slug']}/installations/new?" + urlencode({"state": state}))
+
+
+@app.get("/settings/github/app/callback")
+@login_required
+def github_app_callback():
+    """ההפניה מ-GitHub אחרי התקנה. ה-installation_id בכתובת ניתן לניחוש, ולכן לא סומכים עליו:
+    state מקשר את הבקשה לסשן שלנו, וה-code מוכיח שהמשתמש עצמו רשאי לגשת להתקנה הזו."""
+    user = current_user()
+    state = request.args.get("state", "")
+    # שימוש חד-פעמי, ונצרך רק כשההפניה כוללת state: בקשה זרה (בלי state) לא מוחקת חיבור שנמצא בתהליך
+    saved = session.pop("gh_app_state", None) if state else None
+    code = request.args.get("code", "")
+    action = request.args.get("setup_action", "")
+
+    if action == "request":
+        flash("הבקשה נשלחה וממתינה לאישור מנהל הארגון ב-GitHub. אחרי האישור אפשר לחבר שוב.", "info")
+        return redirect(url_for("account"))
+    if not state:  # למשל עדכון הרשאות ישירות מ-GitHub: אין מה לקשר
+        flash("ההרשאות עודכנו ב-GitHub. כדי לחבר חשבון, השתמש בכפתור החיבור כאן.", "info")
+        return redirect(url_for("account"))
+    valid = (
+        isinstance(saved, dict)
+        and hmac.compare_digest(str(saved.get("s", "")).encode(), state.encode())
+        and saved.get("u") == user.id
+        and 0 <= time.time() - int(saved.get("t", 0)) <= GITHUB_APP_STATE_TTL
+    )
+    if not valid:
+        raise UserError("בקשת החיבור פגה או לא תקפה. התחל מחדש מכפתור החיבור.")
+
+    cfg = github_client.app_config()
+    if not cfg:
+        raise UserError("החיבור ל-GitHub בלחיצה לא מוגדר בשרת.")
+    try:
+        installation_id = int(request.args.get("installation_id", ""))
+    except ValueError:
+        raise UserError("GitHub לא החזיר מזהה התקנה. התחל מחדש.")
+    if not code:
+        raise UserError("GitHub לא החזיר אישור משתמש. ודא שב-App מופעל Request user authorization (OAuth) during installation.")
+
+    try:
+        user_token = github_client.exchange_code(code, cfg)  # נזרק מיד אחרי הבדיקות, לא נשמר
+        gh_login = github_client.user_login(user_token)
+        if installation_id not in github_client.user_installation_ids(user_token):
+            raise UserError("ההתקנה הזו לא שייכת לחשבון ה-GitHub שלך.")
+        info = github_client.installation_info(installation_id, cfg)
+    except github_client.GithubError as e:
+        raise UserError(str(e))
+    # גרסה 1: רק החשבון האישי. בהתקנת ארגון SH היה מקבל גישה לכל ריפוזיטוריז ההתקנה, גם אלה שהמשתמש עצמו לא מורשה אליהם
+    if info["type"] != "User" or not gh_login or info["login"].lower() != gh_login.lower():
+        raise UserError("בשלב זה אפשר לחבר רק התקנה של החשבון האישי שלך ב-GitHub, לא של ארגון.")
+
+    old = get_github_app_link(user)
+    payload = json.dumps({"installation_id": installation_id, "login": info["login"], "type": info["type"]})
+    encrypted = fernet.encrypt(payload.encode()).decode()
+    row = ApiKey.query.filter_by(user_id=user.id, provider=GITHUB_APP_PROVIDER).first()
+    if row:
+        row.encrypted_key = encrypted
+    else:
+        db.session.add(ApiKey(user_id=user.id, provider=GITHUB_APP_PROVIDER, encrypted_key=encrypted))
+    db.session.commit()
+    if old and old["installation_id"] != installation_id:
+        github_client.forget_installation(old["installation_id"])
+    flash(f"GitHub חובר בהצלחה (החשבון {info['login']}).", "success")
+    return redirect(url_for("account"))
+
+
+@app.post("/settings/github/app/disconnect")
+@login_required
+def github_app_disconnect():
+    user = current_user()
+    link = get_github_app_link(user)
+    row = ApiKey.query.filter_by(user_id=user.id, provider=GITHUB_APP_PROVIDER).first()
+    if row:
+        db.session.delete(row)
+        db.session.commit()
+    if link:
+        github_client.forget_installation(link["installation_id"])
+    flash("החיבור ל-GitHub נותק. להסרה מלאה של ה-App אפשר להיכנס להגדרות ב-GitHub.", "success")
     return redirect(url_for("account"))
 
 
@@ -1281,7 +1407,13 @@ def new_server():
 @login_required
 def account():
     user = current_user()
-    return render_template("account.html", providers=ai_providers.PROVIDERS, saved_providers={k.provider for k in user.api_keys})
+    return render_template(
+        "account.html",
+        providers=ai_providers.PROVIDERS,
+        saved_providers={k.provider for k in user.api_keys},
+        gh_app=get_github_app_link(user),
+        gh_app_enabled=github_client.app_config() is not None,
+    )
 
 
 @app.route("/")
