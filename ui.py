@@ -837,7 +837,7 @@ NEW = """{% extends 'base.html' %}
             <div class="col-sm-4"><label class="form-label" for="github_ref">ענף (אופציונלי)</label><input type="text" name="github_ref" id="github_ref" class="form-control ltr" placeholder="main" value="{{ f.get('github_ref', '') }}"></div>
           </div>
           <div class="form-text mb-3">
-            {% if 'github' in saved_providers %}GitHub מחובר, ואפשר לייבא גם מריפו פרטי.{% else %}ריפו ציבורי לא דורש חיבור. לריפו פרטי חבר טוקן בכרטיס "חיבור GitHub".{% endif %}
+            {% if 'github' in saved_providers or 'github_app' in saved_providers %}GitHub מחובר, ואפשר לייבא גם מריפו פרטי.{% else %}ריפו ציבורי לא דורש חיבור. לריפו פרטי חבר טוקן בכרטיס "חיבור GitHub".{% endif %}
             <span class="gh-file-only">מיובא קובץ אחד. קובץ py נשלח ישירות, וסוגי קבצים אחרים מתורגמים ב-AI.</span>
             <span class="repo-only">הריפו כולו (קבצי טקסט, עד 100 קבצים ו-1.5MB) נשמר כשרת אחד. בלי AI.</span>
           </div>
@@ -936,13 +936,29 @@ ACCOUNT = """{% extends 'base.html' %}
     <div class="acct-head">
       <span class="svc-ico" aria-hidden="true">GH</span>
       <div class="grow"><h2 id="h-github">חיבור GitHub</h2><p>לייבוא קוד מריפו פרטי. ריפו ציבורי לא דורש חיבור.</p></div>
-      {% if 'github' in saved_providers %}<span class="st st-ok">מחובר</span>{% else %}<span class="st st-mute">לא מחובר</span>{% endif %}
+      {% if gh_app or 'github' in saved_providers %}<span class="st st-ok">מחובר</span>{% else %}<span class="st st-mute">לא מחובר</span>{% endif %}
     </div>
+    {% if gh_app %}
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="small"><span class="ltr d-inline-block">@{{ gh_app.login }}</span> &middot; חיבור דרך GitHub App, קריאה בלבד</span>
+      <span class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-primary" href="https://github.com/settings/installations/{{ gh_app.installation_id }}" target="_blank" rel="noopener">שנה ריפוזיטוריז</a>
+        <form method="post" action="{{ url_for('github_app_disconnect') }}" class="m-0" data-confirm="לנתק את החיבור ל-GitHub?">__CSRF__<button class="btn btn-sm btn-outline-danger">נתק</button></form>
+      </span>
+    </div>
+    {% elif gh_app_enabled %}
+    <form method="post" action="{{ url_for('github_app_connect') }}" class="m-0 d-flex align-items-center flex-wrap gap-3">
+      __CSRF__<button class="btn btn-primary">Connect GitHub</button>
+      <span class="text-muted small">בוחרים בעצמך לאילו ריפוזיטוריז תינתן גישת קריאה בלבד.</span>
+    </form>
+    {% endif %}
+
     {% if 'github' in saved_providers %}
-    <form method="post" action="{{ url_for('update_github') }}" class="m-0 d-flex justify-content-between align-items-center flex-wrap gap-2" data-confirm="לנתק את החיבור ל-GitHub?">
-      __CSRF__<span class="text-muted small">הטוקן שמור מוצפן ומשמש לקריאה בלבד.</span><button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק</button>
+    <form method="post" action="{{ url_for('update_github') }}" class="m-0 mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2" data-confirm="לנתק את החיבור ל-GitHub?">
+      __CSRF__<span class="text-muted small">טוקן אישי שמור מוצפן ומשמש לקריאה בלבד.</span><button name="action" value="delete" class="btn btn-sm btn-outline-danger">נתק טוקן</button>
     </form>
     {% else %}
+    {% if gh_app or gh_app_enabled %}<details class="mt-3"><summary class="small text-muted">מתקדם: חיבור בעזרת טוקן אישי</summary><div class="mt-2">{% endif %}
     <form method="post" action="{{ url_for('update_github') }}">
       __CSRF__
       <label class="form-label" for="gh_token">טוקן גישה</label>
@@ -958,6 +974,7 @@ ACCOUNT = """{% extends 'base.html' %}
         <li>העתק את הטוקן והדבק כאן. הוא נשמר מוצפן ומשמש לקריאה בלבד.</li>
       </ol>
     </details>
+    {% if gh_app or gh_app_enabled %}</div></details>{% endif %}
     {% endif %}
   </section>
 
