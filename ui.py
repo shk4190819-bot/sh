@@ -290,7 +290,7 @@ LOGIN = """{% extends 'base.html' %}
 <div class="auth-card p-4 p-md-5 w-100" style="max-width:440px">
   <div class="brand-mark">SH</div>
   <h3 class="text-center mb-1 fw-bold">{% if tab == 'register' %}יצירת חשבון{% else %}התחברות{% endif %}</h3>
-  <p class="text-center text-muted mb-4">מדביקים קוד, ומקבלים שרת באינטרנט.</p>
+  <p class="text-center text-muted mb-4">אירוח לשרתי Flask.</p>
   {% if google_enabled %}
   <a href="{{ url_for('auth_google') }}" class="btn-oauth mb-3">המשך עם Google</a>
   <div class="d-flex align-items-center gap-2 mb-3 text-muted small"><hr class="flex-grow-1 m-0">או עם שם משתמש<hr class="flex-grow-1 m-0"></div>
@@ -1057,9 +1057,9 @@ LANDING = """{% extends 'base.html' %}
 </nav>
 
 <section class="lp-hero">
-  <div class="lp-pill"><span class="dot dot-ok"></span>פריסה בשניות, בלי תשתית</div>
-  <h1>מדביקים קוד.<br><span class="lp-grad">מקבלים שרת באינטרנט.</span></h1>
-  <p>מעלים אפליקציית Flask או מייבאים ריפו מ-GitHub, והשרת עולה מיד בכתובת משלו. בלי להקים שרתים ובלי להתעסק בפריסה.</p>
+  <div class="lp-pill"><span class="dot dot-ok"></span>אירוח לשרתי Flask</div>
+  <h1>יש לך קוד Flask?<br><span class="lp-grad">שים אותו באינטרנט.</span></h1>
+  <p>מדביקים את הקוד, או מחברים פרויקט מ-GitHub, ומקבלים כתובת אינטרנט שעובדת. אין צורך להתקין כלום ואין צורך להקים שרת בעצמך.</p>
   <div class="d-flex justify-content-center gap-2 flex-wrap">
     <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary lp-btn">התחל עכשיו</a>
     <a href="{{ url_for('login_page') }}" class="btn btn-outline-secondary lp-btn">התחברות</a>
@@ -1078,31 +1078,42 @@ LANDING = """{% extends 'base.html' %}
 </section>
 
 <section class="lp-sec" id="features">
-  <h2>כל מה שצריך כדי להעלות שרת</h2>
-  <div class="sub">פשוט כמו להדביק קוד, עם הכלים שמצפים להם משירות אירוח.</div>
+  <h2>מה אפשר לעשות כאן</h2>
+  <div class="sub">הדברים שצריך כדי להעלות שרת ולהמשיך לעבוד עליו.</div>
   <div class="row g-3">
-    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">Py</span><h6>Python ישירות</h6><p>קוד Flask רץ כמו שהוא, בלי שינוי ובלי AI.</p></div></div>
-    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">GH</span><h6>ייבוא מ-GitHub</h6><p>קובץ בודד או ריפו שלם, גם פרטי עם טוקן קריאה בלבד, ומשיכת גרסה עדכנית בלחיצה.</p></div></div>
-    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">AI</span><h6>תרגום משפות אחרות</h6><p>PHP, JavaScript, Java, Go, Ruby ו-C# מתורגמים ל-Flask. נדרש מפתח API משלך.</p></div></div>
-    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#9998;</span><h6>עורך קוד באתר</h6><p>עורכים בדפדפן, או מבקשים מה-AI שינוי ורואים מה השתנה לפני השמירה.</p></div></div>
-    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#128274;</span><h6>משתני סביבה מוצפנים</h6><p>מפתחות וסיסמאות נשמרים מוצפנים ולא מוצגים אחרי השמירה.</p></div></div>
-    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#9776;</span><h6>יומנים</h6><p>הבקשות האחרונות לכל שרת, עם רענון אוטומטי.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">Py</span><h6>קוד Flask רגיל</h6><p>מדביקים את הקוד כמו שהוא. אין צורך לשנות אותו.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">GH</span><h6>ייבוא מ-GitHub</h6><p>קובץ אחד או פרויקט שלם. אפשר גם פרויקט פרטי, עם טוקן שנותן הרשאת קריאה בלבד. כשמעדכנים ב-GitHub, לחיצה אחת מעדכנת את השרת.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">AI</span><h6>קוד בשפה אחרת</h6><p>יש לך קוד ב-PHP, JavaScript, Java, Go, Ruby או C#? ה-AI יתרגם אותו ל-Flask. צריך מפתח API משלך, והתוצאה כדאי לבדוק לפני שמעלים.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#9998;</span><h6>עריכה בדפדפן</h6><p>אפשר לערוך את הקוד ישר באתר, או לבקש מה-AI לשנות משהו. לפני השמירה רואים בדיוק מה השתנה.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#128274;</span><h6>מפתחות וסיסמאות</h6><p>את המפתחות והסיסמאות של השרת שומרים בנפרד מהקוד. הם נשמרים מוצפנים ולא מוצגים שוב אחרי השמירה.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><span class="lp-ico">&#9776;</span><h6>יומן בקשות</h6><p>רואים מי פנה לשרת ומה השתבש. הרשימה מתעדכנת לבד.</p></div></div>
   </div>
 </section>
 
 <section class="lp-sec" id="how">
   <h2>איך זה עובד</h2>
-  <div class="sub">שלושה צעדים מהקוד לכתובת חיה.</div>
+  <div class="sub">שלושה שלבים:</div>
   <div class="row g-3 lp-steps">
-    <div class="col-md-4"><div class="lp-step"><h6>פותחים חשבון</h6><p>שם משתמש וסיסמה{% if google_enabled %}, או Google{% endif %}. מנהל המערכת מאשר כל חשבון חדש.</p></div></div>
-    <div class="col-md-4"><div class="lp-step"><h6>מדביקים או מייבאים</h6><p>מדביקים קוד, או מחברים קובץ וריפו מ-GitHub.</p></div></div>
-    <div class="col-md-4"><div class="lp-step"><h6>השרת עולה מיד</h6><p>אחרי שהחשבון אושר אין אישור לכל שרת. מקבלים כתובת ועובדים איתה.</p></div></div>
+    <div class="col-md-4"><div class="lp-step"><h6>נרשמים</h6><p>שם משתמש וסיסמה{% if google_enabled %}, או Google{% endif %}. מנהל המערכת מאשר כל חשבון חדש.</p></div></div>
+    <div class="col-md-4"><div class="lp-step"><h6>מוסיפים את הקוד</h6><p>מדביקים אותו, או מחברים פרויקט מ-GitHub.</p></div></div>
+    <div class="col-md-4"><div class="lp-step"><h6>מקבלים כתובת</h6><p>ברגע שהחשבון אושר, כל שרת שמעלים עולה מיד. אין צורך באישור נוסף לכל שרת.</p></div></div>
   </div>
 </section>
 
+<section class="lp-sec" id="limits">
+  <h2>מה חשוב לדעת</h2>
+  <div class="sub">המגבלות הקיימות היום:</div>
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>גודל הקוד</h6><p>עד 200,000 תווים לשרת. בתרגום עם AI, עד 60,000 תווים.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>משתני סביבה</h6><p>עד 50 לכל שרת, ועד 4,096 תווים בכל אחד.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>יומן בקשות</h6><p>נשמרות עד 1,000 הבקשות האחרונות של כל שרת.</p></div></div>
+  </div>
+  {# TODO: להוסיף כאן מחיר (חינם או בתשלום), כמה זיכרון ומעבד מקבל כל שרת, האם שרת "נרדם" אחרי זמן ללא שימוש, ותנאי שימוש #}
+</section>
+
 <section class="lp-cta">
-  <h2>מוכנים להעלות את השרת הראשון?</h2>
-  <p>ההרשמה פתוחה. החשבון מתחיל לעבוד אחרי אישור מנהל.</p>
+  <h2>רוצה לנסות?</h2>
+  <p>ההרשמה פתוחה לכולם. אחרי ההרשמה צריך לחכות לאישור של מנהל המערכת לפני שאפשר להעלות שרת.</p>
   <a href="{{ url_for('login_page') }}?tab=register" class="btn btn-primary lp-btn">יצירת חשבון</a>
 </section>
 
