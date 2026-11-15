@@ -9,6 +9,7 @@ import os
 import random
 import re
 import secrets
+import signal
 import sys
 import threading
 import time
@@ -132,6 +133,9 @@ MAX_CODE_CHARS = int(os.environ.get("MAX_CODE_CHARS", "200000"))  # Python יש�
 MAX_AI_CODE_CHARS = int(os.environ.get("MAX_AI_CODE_CHARS", "60000"))  # תרגום ב-AI: התשובה חייבת להיכנס בפלט אחד של המודל
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 MAX_ENV_VARS = 50
+# מגבלות שימוש (ניתנות לשינוי במשתני סביבה ב-Render). מנהלים פטורים ממכסת השרתים.
+MAX_ROUTES_PER_USER = int(os.environ.get("MAX_ROUTES_PER_USER", "5"))
+REQUEST_TIMEOUT_SECONDS = int(os.environ.get("REQUEST_TIMEOUT_SECONDS", "20"))  # 0 = ללא הגבלה
 MAX_ENV_VALUE = 4096
 # סיומת קובץ ב-GitHub -> שפת מקור (py נשלח ישירות, השאר מתורגם ב-AI)
 EXT_LANG = {".py": "Python", ".php": "PHP", ".js": "JavaScript", ".mjs": "JavaScript", ".java": "Java", ".go": "Go", ".rb": "Ruby", ".cs": "C#"}
@@ -274,6 +278,8 @@ def login_page():
             raise UserError("שם משתמש: 3-30 תווים, אנגלית קטנה/ספרות/_, מתחיל באות, ולא שם שמור.")
         if len(password) < 8:
             raise UserError("הסיסמה חייבת להכיל לפחות 8 תווים.")
+        if request.form.get("accept_terms") != "1":
+            raise UserError("כדי להירשם צריך לאשר את תנאי השימוש.")
         if User.query.filter_by(username=username).first():
             raise UserError("שם המשתמש כבר קיים במערכת. נסה שם אחר.")
         user = User(username=username, password_hash=generate_password_hash(password))
@@ -626,6 +632,8 @@ def deploy_server():
     route = Route.query.filter_by(user_id=user.id, route_name=route_name).first()
     if route is None:
         assert_route_name_free(route_name)
+        if not user.is_admin and Route.query.filter_by(user_id=user.id).count() >= MAX_ROUTES_PER_USER:
+            raise UserError(f"אפשר ליצור עד {MAX_ROUTES_PER_USER} שרתים לכל חשבון. כדי ליצור שרת חדש צריך קודם למחוק אחד קיים.")
 
     mode = request.form.get("source_mode")
     gh_meta = None
@@ -956,6 +964,30 @@ def delete_env_var(route_id):
 
 
 # --- הרצת השרתים הווירטואליים: כל אחד כאפליקציית Flask קטנה משלו, נטענת מה-DB לפי דרישה ---
+class RequestTimeout(BaseException):
+    """BaseException בכוונה: `except Exception` בקוד המשתמש לא תבלע אותה."""
+
+
+@contextlib.contextmanager
+def request_deadline(seconds):
+    """מגבלת זמן להרצת קוד משתמש. עובדת רק ב-main thread של ה-worker (gunicorn sync), אחרת לא עושה כלום.
+    זו הגנה חלקית: היא לא עוצרת חסימה בקוד C, וקוד שתופס BaseException יכול להתעלם ממנה. הגנת הגיבוי היא timeout של gunicorn."""
+    if not seconds or not hasattr(signal, "setitimer") or threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def _on_alarm(signum, frame):
+        raise RequestTimeout()
+
+    previous = signal.signal(signal.SIGALRM, _on_alarm)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+
 _subapps = {}  # route_id -> (live_version, flask_app). cache לכל worker, מתרענן לפי live_version
 def build_subapp(code, label, ident, env=None, tag=0):
     """בונה אפליקציית WSGI מקוד שרת. מחזיר (אפליקציה, שם חבילה לשחרור, או None לשרת של קובץ בודד)."""
@@ -1340,6 +1372,11 @@ def resolve_route(first, rest):
     return None
 
 
+@app.route("/terms")
+def terms_page():
+    return render_template("terms.html", contact_email=(os.environ.get("CONTACT_EMAIL") or "").strip(), max_routes=MAX_ROUTES_PER_USER)
+
+
 @app.route("/<route_name>", defaults={"rest": ""}, methods=HTTP_METHODS, strict_slashes=False)
 @app.route("/<route_name>/<path:rest>", methods=HTTP_METHODS)
 @csrf.exempt  # ה-webhooks החיצוניים לא יכולים לשלוח CSRF token
@@ -1364,10 +1401,13 @@ def dispatch(route_name, rest):
         environ["SCRIPT_NAME"] = request.script_root + script_name
         environ["PATH_INFO"] = path_info
         strip_admin_cookie_from_request(environ)
-        response = Response.from_app(sub, environ, buffered=True)
+        with request_deadline(REQUEST_TIMEOUT_SECONDS):
+            response = Response.from_app(sub, environ, buffered=True)
         strip_admin_cookie_from_response(response)
         response.headers["X-Content-Type-Options"] = "nosniff"
-    except Exception as e:
+    except (Exception, RequestTimeout) as e:
+        if isinstance(e, RequestTimeout):
+            e = TimeoutError(f"הבקשה נעצרה אחרי {REQUEST_TIMEOUT_SECONDS} שניות")
         failure = e
         ctx.add_system(f"{phase} error", e)
         with _system_logging():
@@ -1420,7 +1460,7 @@ def account():
 def index():
     user = current_user()
     if user is None:
-        return render_template("landing.html")  # דף פתיחה לפני כניסה/הרשמה
+        return render_template("landing.html", max_routes=MAX_ROUTES_PER_USER, request_timeout=REQUEST_TIMEOUT_SECONDS)  # דף פתיחה לפני כניסה/הרשמה
     if not (user.is_approved or user.is_admin):
         return redirect(url_for("pending_page"))
     routes = Route.query.filter_by(user_id=user.id).order_by(Route.created_at.desc()).all()
