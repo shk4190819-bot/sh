@@ -14,7 +14,7 @@ ROUTE_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 RESERVED_STATIC = frozenset({
     # routes של המערכת
     "admin", "auth", "login", "logout", "static", "settings", "deploy", "healthz", "new", "account", "pending",
-    "edit", "delete", "sync",
+    "edit", "delete", "sync", "terms",
     # קבצים שדפדפנים ובוטים מבקשים מהשורש
     "favicon", "robots", "sitemap",
 })
