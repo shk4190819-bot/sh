@@ -10,7 +10,7 @@ BASE = """<!DOCTYPE html>
 <title>{% block title %}SH{% endblock %} · SH</title>
 <script>try{document.documentElement.setAttribute('data-bs-theme',localStorage.getItem('sh-theme')||'dark');}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <style>
 :root{--brand:#5b5ff0;--brand-d:#4a4ed6;--bg:#f6f6f8;--panel:#ffffff;--panel-2:#f0f0f4;--border:#e2e3e9;--text:#14151a;--muted:#6b6f7b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r:10px;--r-lg:14px;--ok-bg:color-mix(in srgb,var(--ok) 14%,transparent);--warn-bg:color-mix(in srgb,var(--warn) 14%,transparent);--bad-bg:color-mix(in srgb,var(--bad) 14%,transparent)}
@@ -223,6 +223,38 @@ details>summary{cursor:pointer;color:var(--muted)}
 .btn-oauth{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.62rem;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);font-weight:500;text-decoration:none;font-size:.92rem}
 .btn-oauth:hover{border-color:var(--muted);color:var(--text)}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+/* ---- זהות חזותית: כחול-נפט, כותרות בסריף, הטרמינל כמרכז הדף ---- */
+:root{--brand:#0e6e8c;--brand-d:#0a566e;--bg:#f3f6f8;--panel:#ffffff;--panel-2:#e9eff2;--border:#d6dfe4;--text:#10202c;--muted:#5a6b78;--disp:'Frank Ruhl Libre','Heebo',serif}
+[data-bs-theme=dark]{--brand:#5bbcd8;--brand-d:#8ed3e6;--bg:#0d161d;--panel:#121e27;--panel-2:#192833;--border:#24343f;--text:#e6eef2;--muted:#8da1ae}
+[data-bs-theme=dark] .btn-primary{--bs-btn-color:#06222c;--bs-btn-hover-color:#06222c;--bs-btn-active-color:#06222c}
+[data-bs-theme=dark] .brand-mark{color:#06222c}
+.lp-hero h1,.lp-sec h2,.lp-cta h2,.auth-card h3{font-family:var(--disp);font-weight:700}
+.lp-glow{display:none}
+.lp-grad{background:none;color:inherit;-webkit-text-fill-color:currentColor}
+.lp-pill{background:transparent;border-radius:6px}
+.lp-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);column-gap:3rem;align-items:center;text-align:start;max-width:1080px;padding:4rem 0 2rem}
+.lp-hero>*{grid-column:1}.lp-hero>.lp-demo{grid-column:2;grid-row:1 / span 5;margin:0}
+.lp-hero p{margin:0 0 2rem;max-width:34rem}
+.lp-hero .justify-content-center{justify-content:flex-start!important}
+.lp-hero h1{font-size:clamp(2.3rem,4.6vw,3.6rem);line-height:1.1;letter-spacing:0}
+.lp-demo{background:#0f1d27;border-color:#24343f;box-shadow:0 18px 40px -24px rgba(8,20,30,.55)}
+.lp-demo-bar{background:#16293a;border-color:#24343f}.lp-demo-bar i{background:#2d4354}.lp-demo-bar span{color:#8da1ae}
+.lp-demo-body{color:#9fb4c2;font-size:.9rem}.lp-demo-body .hl{color:#fff}.lp-demo-body .ok{color:#5ad19a}
+.lp-sec{padding:4.5rem 0 1rem}
+.lp-sec h2{text-align:start}.lp-sec .sub{text-align:start;margin:0 0 2rem;max-width:36rem}
+.lp-card,.lp-step{border:0;border-top:1px solid var(--border);border-radius:0;background:transparent;padding:1.1rem .2rem 0;transition:none}
+.lp-card:hover{border-color:var(--border);transform:none}
+.lp-ico{display:none}
+.lp-card h6{margin:0 0 .35rem;font-size:1.02rem}
+.lp-step::before{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
+.lp-cta{background:var(--brand);border:0;border-radius:12px;text-align:start;padding:2.6rem 2rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.2rem}
+.lp-cta h2,.lp-cta p{color:#fff;margin:0}.lp-cta p{opacity:.85;margin-top:.3rem}
+[data-bs-theme=dark] .lp-cta h2,[data-bs-theme=dark] .lp-cta p{color:#06222c}
+.lp-cta .btn-primary{--bs-btn-bg:#fff;--bs-btn-border-color:#fff;--bs-btn-color:#0a566e;--bs-btn-hover-bg:#e6f2f6;--bs-btn-hover-border-color:#e6f2f6;--bs-btn-hover-color:#0a566e}
+[data-bs-theme=dark] .lp-cta .btn-primary{--bs-btn-bg:#06222c;--bs-btn-border-color:#06222c;--bs-btn-color:#fff;--bs-btn-hover-bg:#0b3342;--bs-btn-hover-color:#fff}
+.auth-card{box-shadow:none}
+@media (max-width:860px){.lp-hero{display:block;text-align:start;padding-top:2.5rem}.lp-hero>.lp-demo{margin:2rem 0 0}}
+
 </style>
 </head>
 <body>
