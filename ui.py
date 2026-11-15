@@ -292,7 +292,8 @@ LOGIN = """{% extends 'base.html' %}
   <h3 class="text-center mb-1 fw-bold">{% if tab == 'register' %}יצירת חשבון{% else %}התחברות{% endif %}</h3>
   <p class="text-center text-muted mb-4">אירוח לשרתי Flask.</p>
   {% if google_enabled %}
-  <a href="{{ url_for('auth_google') }}" class="btn-oauth mb-3">המשך עם Google</a>
+  <a href="{{ url_for('auth_google') }}" class="btn-oauth mb-1">המשך עם Google</a>
+  <div class="text-center text-muted small mb-3">בהמשך עם Google אתה מסכים ל<a href="{{ url_for('terms_page') }}" target="_blank" rel="noopener" class="text-muted">תנאי השימוש</a></div>
   <div class="d-flex align-items-center gap-2 mb-3 text-muted small"><hr class="flex-grow-1 m-0">או עם שם משתמש<hr class="flex-grow-1 m-0"></div>
   {% endif %}
 
@@ -329,7 +330,11 @@ LOGIN = """{% extends 'base.html' %}
           <input type="password" name="password" class="form-control ltr" required minlength="8" autocomplete="new-password">
           <button type="button" class="btn btn-outline-secondary js-eye" tabindex="-1">הצג</button>
         </div>
-        <div class="form-text mb-4">לפחות 8 תווים. אין שחזור סיסמה, אז כדאי לשמור אותה.</div>
+        <div class="form-text mb-3">לפחות 8 תווים. אין שחזור סיסמה, אז כדאי לשמור אותה.</div>
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" name="accept_terms" value="1" id="accept-terms" required>
+          <label class="form-check-label small" for="accept-terms">קראתי ואני מסכים ל<a href="{{ url_for('terms_page') }}" target="_blank" rel="noopener">תנאי השימוש</a></label>
+        </div>
         <button type="submit" class="btn btn-primary w-100 py-2 js-load">צור חשבון</button>
       </form>
     </div>
@@ -1104,6 +1109,8 @@ LANDING = """{% extends 'base.html' %}
   <h2>מה חשוב לדעת</h2>
   <div class="sub">המגבלות הקיימות היום:</div>
   <div class="row g-3">
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>מספר שרתים</h6><p>עד {{ max_routes }} שרתים לכל חשבון.</p></div></div>
+    <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>זמן תגובה</h6><p>{% if request_timeout %}בקשה שנמשכת יותר מ-{{ request_timeout }} שניות נעצרת.{% else %}אין הגבלת זמן לבקשה.{% endif %}</p></div></div>
     <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>גודל הקוד</h6><p>עד 200,000 תווים לשרת. בתרגום עם AI, עד 60,000 תווים.</p></div></div>
     <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>משתני סביבה</h6><p>עד 50 לכל שרת, ועד 4,096 תווים בכל אחד.</p></div></div>
     <div class="col-md-6 col-lg-4"><div class="lp-card"><h6>יומן בקשות</h6><p>נשמרות עד 1,000 הבקשות האחרונות של כל שרת.</p></div></div>
@@ -1119,7 +1126,7 @@ LANDING = """{% extends 'base.html' %}
 
 <footer class="lp-foot">
   <span>© מערכת שרתים</span>
-  <span><a href="{{ url_for('login_page') }}">התחברות</a> · <a href="{{ url_for('login_page') }}?tab=register">הרשמה</a></span>
+  <span><a href="{{ url_for('terms_page') }}">תנאי שימוש</a> · <a href="{{ url_for('login_page') }}">התחברות</a> · <a href="{{ url_for('login_page') }}?tab=register">הרשמה</a></span>
 </footer>
 </div>
 {% endblock %}"""
@@ -1269,6 +1276,51 @@ ADMIN_USER = """{% extends 'base.html' %}
 {% endif %}
 {% endblock %}"""
 
+TERMS = """{% extends 'base.html' %}
+{% block title %}תנאי שימוש{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center pt-4 pb-5">
+<div class="card p-4 p-md-5 w-100" style="max-width:760px">
+  <h3 class="fw-bold mb-1">תנאי שימוש</h3>
+  <p class="text-muted mb-4">אנא קרא לפני שאתה משתמש בשירות. בהרשמה או בהתחברות עם Google אתה מאשר שקראת את התנאים ומסכים להם.</p>
+
+  <h5 class="mt-3">מה השירות</h5>
+  <p>השירות מארח שרתי Flask שאתה מעלה. הוא ניתן כפי שהוא, ללא התחייבות לזמינות, ליציבות או לשמירת מידע. שרתים יכולים להיפסק, להתאפס או להימחק, ואחריות הגיבוי על הקוד והנתונים שלך היא עליך.</p>
+
+  <h5 class="mt-3">אחריותך על מה שאתה מעלה</h5>
+  <p>אתה האחראי המלא לקוד, לתוכן ולשימוש בשרת שלך. אתה מצהיר שיש לך זכות להשתמש בכל מה שאתה מעלה, כולל קוד, טקסטים, תמונות וספריות של אחרים.</p>
+
+  <h5 class="mt-3">שימושים אסורים</h5>
+  <p>אסור להעלות או להפעיל בשירות:</p>
+  <ul>
+    <li>תוכן שפוגע בזכויות יוצרים או בזכויות של אחרים.</li>
+    <li>תוכן או פעילות שאינם חוקיים, או שמטרתם הונאה והטעיה, כולל דפי התחזות ופישינג.</li>
+    <li>תוכנות זדוניות, ניסיונות לחדור למערכות, או התקפות על השירות, על משתמשים אחרים או על אתרים אחרים.</li>
+    <li>ניסיון לגשת למידע של המערכת או של משתמשים אחרים, כולל סיסמאות, מפתחות ומשתני סביבה.</li>
+    <li>שליחת דואר זבל והודעות המוניות, כרייה של מטבעות דיגיטליים, או שימוש מופרז במשאבים שפוגע בשאר המשתמשים.</li>
+  </ul>
+
+  <h5 class="mt-3">הפסקה והסרה</h5>
+  <p>מנהל המערכת רשאי להשעות חשבון, להפסיק או למחוק שרת ולהסיר תוכן בכל עת, גם בלי הודעה מראש, בעיקר אם יש חשד להפרת התנאים או לפגיעה בשירות או באחרים. ייתכן שנמסור פרטים לרשויות כנדרש בדין.</p>
+
+  <h5 class="mt-3">מגבלות</h5>
+  <p>לכל חשבון מותרים עד {{ max_routes }} שרתים, ובקשה שרצה זמן רב מדי נעצרת. אפשר שנשנה את המגבלות מעת לעת.</p>
+
+  <h5 class="mt-3">מידע שנשמר</h5>
+  <p>נשמרים פרטי החשבון, הקוד של השרתים, משתני הסביבה (בהצפנה) ויומן של הבקשות האחרונות לכל שרת. מפתחות ה-API שאתה מזין נשמרים מוצפנים ומשמשים רק לפעולות ה-AI שאתה מבקש.</p>
+
+  <h5 class="mt-3">הגבלת אחריות</h5>
+  <p>השימוש בשירות על אחריותך. לא נישא באחריות לנזק ישיר או עקיף שנגרם משימוש בשירות או מחוסר זמינות שלו, ככל שהדין מאפשר.</p>
+
+  <h5 class="mt-3">שינויים וקשר</h5>
+  <p>התנאים עשויים להתעדכן, והמשך השימוש לאחר עדכון משמעותו הסכמה לנוסח החדש.
+  {% if contact_email %}לשאלות או לדיווח על תוכן בעייתי אפשר לכתוב אל <a href="mailto:{{ contact_email }}" class="ltr d-inline-block">{{ contact_email }}</a>.{% else %}לדיווח על תוכן בעייתי יש לפנות למנהל המערכת.{% endif %}</p>
+
+  <div class="text-center small mt-4"><a href="{{ url_for('index') }}" class="text-muted text-decoration-none">&rarr; חזרה</a></div>
+</div>
+</div>
+{% endblock %}"""
+
 TEMPLATES = {
     "base.html": BASE,
     "edit.html": EDIT,
@@ -1281,6 +1333,7 @@ TEMPLATES = {
     "review.html": REVIEW,
     "logs.html": LOGS,
     "landing.html": LANDING,
+    "terms.html": TERMS,
     "pending.html": PENDING,
     "admin_users.html": ADMIN_USERS,
     "admin_user.html": ADMIN_USER,
